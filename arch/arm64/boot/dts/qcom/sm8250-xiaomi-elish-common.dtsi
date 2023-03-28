@@ -732,7 +732,7 @@
 
 &slpi {
 	firmware-name = "qcom/sm8250/xiaomi/elish/slpi.mbn";
-	status = "okay";
+	status = "disabled";
 };
 
 &spi4 {
