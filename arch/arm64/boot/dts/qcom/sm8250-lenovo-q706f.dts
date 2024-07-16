@@ -606,14 +606,14 @@
 &i2c1 {
 	status = "okay";
 	clock-frequency = <1000000>;
-	/* Pen Charging NXP CTN730 Qi charger @28 */
+	/* Pen Charging NXP CTN730 Qi charger @ 28 */
 
 };
 
 &i2c3 {
 	status = "okay";
 	clock-frequency = <400000>;
-	/* hid-over-i2c Keyboard @61 */
+	/* hid-over-i2c Keyboard @ 61 */
 
 };
 
@@ -667,10 +667,10 @@
 &i2c5 {
 	status = "okay";
 	clock-frequency = <400000>;
-	/* Cirrus CS35L41 (Speaker 1) @ 40 */
-	/* Cirrus CS35L41 (Speaker 2) @ 41 */
-	/* Cirrus CS35L41 (Speaker 3) @ 42 */
-	/* Cirrus CS35L41 (Speaker 4) @ 43 */
+	/* Cirrus CS35L41 (Speaker 1) @ 30 */
+	/* Cirrus CS35L41 (Speaker 2) @ 31 */
+	/* Cirrus CS35L41 (Speaker 3) @ 36 */
+	/* Cirrus CS35L41 (Speaker 4) @ 37 */
 	/* Everest-semi ES7210 4-ch ADC @ 40 */
 	/* Synaptics AS33970  @ 41 */
 
@@ -691,7 +691,9 @@
 		compatible = "ti,bq27541";
 		reg = <0x55>;
 	};
-	/* Qcom SMB1390 @ 10 */
+	/* Qcom SMB1396 slave @ 18 */
+	/* Qcom SMB1396 @ 34 */
+	/* Qcom SMB1396 slave @ 35 */
 	/* Qcom FSA4480 USB-C audio switch @ 43 */
 };
 
