@@ -173,16 +173,6 @@
 		};
 	};
 
-    panel_avdd_5p5: display-gpio-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "display_panel_avdd";
-		regulator-min-microvolt = "5500000";
-		regulator-max-microvolt = "5500000";
-		regulator-enable-ramp-delay = <233>;
-		enable-active-high;
-		regulator-boot-on;
-	};
-
     cs35l45_avdd_5p5: cs35l45-gpio-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "cs35l45_gpio_avdd";
@@ -748,16 +738,10 @@
 		reg = <0>;
 		vddio-supply = <&vreg_l14a_1p8>;
 		vdd-supply = <&vreg_l11c_3p3>;
-		avdd-supply = <&panel_avdd_5p5>;
 		compatible = "samsung,amsa26zp01";
 		status = "okay";
-		/*
-		 * FIXME: There is a bug somewhere in the display stack and it isn't
-		 * possible to get the panel to a working state after toggling reset.
-		 * At best it just shows one or more vertical red lines. So for now
-		 * let's skip the reset GPIO.
-		 */
-		// reset-gpios = <&tlmm 75 GPIO_ACTIVE_LOW>;
+
+		reset-gpios = <&tlmm 75 GPIO_ACTIVE_LOW>;
 
 		pinctrl-0 = <&panel_reset_pins &panel_vsync_pins>;
 		pinctrl-names = "default";
@@ -1059,12 +1043,13 @@
 		function = "gpio";
 		drive-strength = <8>;
 		bias-disable;
+		output-high;
 	};
 
 	panel_vsync_pins: panel-vsync-state {
 		pins = "gpio66";
 		function = "mdp_vsync";
-		drive-strength = <16>;
+		drive-strength = <2>;
 		bias-pull-down;
 	};
 
