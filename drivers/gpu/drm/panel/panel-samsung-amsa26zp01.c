@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Generated with linux-mdss-dsi-panel-driver-generator from vendor device tree:
 //   Copyright (c) 2015-2017, The Linux Foundation. All rights reserved.
-//   Copyright (c) 2024 Caleb Connolly <caleb@postmarketos.org>
+//   Copyright (c) 2024 chalkin Deng <chalkin@chalkin@yeah.net>
 
 #include <linux/backlight.h>
 #include <linux/delay.h>
@@ -51,26 +51,12 @@ static int samsung_amsa26zp01_on(struct samsung_amsa26zp01 *ctx)
 	mipi_dsi_dcs_write_seq(dsi, 0xf1, 0x5a, 0x5a);
 	mipi_dsi_dcs_write_seq(dsi, 0xfc, 0x5a, 0x5a);
 
-	// ret = mipi_dsi_compression_mode(dsi, true);
-	// if (ret < 0) {
-	// 	dev_err(dev, "Failed to set compression mode: %d\n", ret);
-	// 	return ret;
-	// }
-
-	// mipi_dsi_dcs_write_seq(dsi, 0x9e,
-	// 		       0x11, 0x00, 0x00, 0x89, 0x30, 0x80, 0x06, 0x40,
-	// 		       0x0a, 0x00, 0x00, 0x64, 0x05, 0x00, 0x05, 0x00,
-	// 		       0x02, 0x00, 0x03, 0x81, 0x00, 0x20, 0x0d, 0xbd,
-	// 		       0x00, 0x11, 0x00, 0x0c, 0x00, 0xf9, 0x00, 0x6d,
-	// 		       0x18, 0x00, 0x10, 0xd0, 0x03, 0x0c, 0x20, 0x00,
-	// 		       0x06, 0x0b, 0x0b, 0x33, 0x0e, 0x1c, 0x2a, 0x38,
-	// 		       0x46, 0x54, 0x62, 0x69, 0x70, 0x77, 0x79, 0x7b,
-	// 		       0x7d, 0x7e, 0x01, 0x02, 0x01, 0x00, 0x09, 0x40,
-	// 		       0x09, 0xbe, 0x19, 0xfc, 0x19, 0xfa, 0x19, 0xf8,
-	// 		       0x1a, 0x38, 0x1a, 0x78, 0x1a, 0xb6, 0x2a, 0xf6,
-	// 		       0x2b, 0x34, 0x2b, 0x74, 0x3b, 0x74, 0x63, 0xf4);
 	mipi_dsi_dcs_write_seq(dsi, 0xf8, 0x58, 0x00, 0x10, 0x54);
 	mipi_dsi_dcs_write_seq(dsi, 0xf9, 0x04, 0x85);
+	/* refresh rate Transition */
+	/* 60 Hz */
+	// mipi_dsi_dcs_write_seq(dsi, 0x60, 0x00);
+	/* 120 Hz */
 	mipi_dsi_dcs_write_seq(dsi, 0x60, 0x20);
 	msleep(50);
 	// #define SAMSUNG_BRIGHTNESS_MODE	0x53
@@ -80,17 +66,6 @@ static int samsung_amsa26zp01_on(struct samsung_amsa26zp01 *ctx)
 	usleep_range(10000, 11000);
 	mipi_dsi_dcs_write_seq(dsi, 0xf9, 0xc0, 0x2b);
 	usleep_range(10000, 11000);
-	// ret = mipi_dsi_dcs_set_display_brightness(dsi, 0x00ff);
-	// if (ret < 0) {
-	// 	dev_err(dev, "Failed to set display brightness: %d\n", ret);
-	// 	return ret;
-	// }
-	// ret = mipi_dsi_dcs_exit_sleep_mode(dsi);
-	// if (ret < 0) {
-	// 	dev_err(dev, "Failed to exit sleep mode: %d\n", ret);
-	// 	return ret;
-	// }
-	// msleep(100);
 	ret = mipi_dsi_dcs_set_display_on(dsi);
 	if (ret < 0) {
 		dev_err(dev, "Failed to set display on: %d\n", ret);
@@ -108,7 +83,6 @@ static int samsung_amsa26zp01_disable(struct drm_panel *panel)
 	int ret;
 	
 	dsi->mode_flags &= ~MIPI_DSI_MODE_LPM;
-	mipi_dsi_generic_write_seq(dsi, 0xfe, 0x00);
 	ret = mipi_dsi_dcs_set_display_off(dsi);
 	if (ret < 0) {
 		dev_err(dev, "Failed to set display off: %d\n", ret);
@@ -240,10 +214,10 @@ static int samsung_amsa26zp01_bl_update_status(struct backlight_device *bl)
 	int ret;
 
 	dsi->mode_flags &= ~MIPI_DSI_MODE_LPM;
-	// mipi_dsi_dcs_write_seq(dsi, 0x53, 0x28);  /* 0x20:Normal mode + Smooth dimming off; 0x28: Normal mode + Smooth dimming on */
 	ret = mipi_dsi_dcs_set_display_brightness(dsi, brightness);
 	if (ret < 0)
 		return ret;
+	msleep(28);
 
 	dsi->mode_flags |= MIPI_DSI_MODE_LPM;
 	
