@@ -42,6 +42,14 @@
 		serial1 = &uart6;
 	};
 	
+	battery: battery {
+		compatible = "simple-battery";
+		energy-full-design-microwatt-hours = <39400000>;
+		charge-full-design-microamp-hours = <10200000>;
+		voltage-min-design-microvolt = <3600000>;
+		voltage-max-design-microvolt = <4450000>;
+	};
+
 	chosen {
 		#address-cells = <2>;
 		#size-cells = <2>;
@@ -94,13 +102,12 @@
 			no-map;
 		};
 		
-		ramoops@b0000000 {
+		ramoops@9e400000 {
 			compatible = "ramoops";
-			reg = <0x0 0xb0000000 0x0 0x400000>;
-			record-size = <0x1000>;
-			console-size = <0x200000>;
-			ecc-size = <16>;
-			no-map;
+			reg = <0x00 0x9e400000 0x00 0x100000>;
+			record-size = <0x20000>;
+			console-size = <0x20000>;
+			ftrace-size = <0x20000>;
 		};
 	};
 	
@@ -122,19 +129,6 @@
 		vin-supply = <&vph_pwr>;
 	};
 	
-	ts_1p8_supply: ts-1p8-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "ts_1p8_supply";
-		
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		// pinctrl-names = "default";
-		// pinctrl-0 = <&ts_pwr_en>;
-		gpio = <&tlmm 130 0>;
-		enable-active-high;
-		regulator-boot-on;
-	};
-	
 	sd_1p8_supply: sd-1p8-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "sd_1p8_supply";
@@ -143,24 +137,21 @@
 		regulator-max-microvolt = <1800000>;
 		// pinctrl-names = "default";
 		// pinctrl-0 = <&sd_pwr_en>;
-		gpio = <&tlmm 114 0>;
+		gpio = <&tlmm 114 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-boot-on;
 		regulator-on-in-suspend;
 		regulator-always-on;
 	};
-	
-	vbus_dvdd_5p0: vbus-dvdd-5p0-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "vbus_dvdd_5p0";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		enable-active-high;
-		gpio = <&pm8150b_gpios 8 GPIO_ACTIVE_HIGH>;
-		regulator-boot-on;
-		regulator-always-on;
+
+	extcon_usb: extcon-usb {
+		compatible = "linux,extcon-usb-gpio";
+		// id-gpios = <&tlmm 38 GPIO_ACTIVE_HIGH>;
+		vbus-gpios = <&pm8150b_gpios 8 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vbus_boost_en>;
 		// pinctrl-names = "default";
-		// pinctrl-0 = <&vbus_boost_en>;
+		// pinctrl-0 = <&cc_dir_default &usb_detect_en>;
 	};
 	
 	// cam0_dvdd_1v2: cam0-dvdd-1v2-regulator {
@@ -257,6 +248,8 @@
 		gpio = <&tlmm 49 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-boot-on;
+		regulator-always-on;
+
 	};
 };
 
@@ -694,7 +687,7 @@
 };
 
 &crypto {
-	status = "disabled";
+	status = "okay";
 };
 
 &gmu {
@@ -733,13 +726,78 @@
 	status = "okay";
 	clock-frequency = <400000>;
 	/* hid-over-i2c Keyboard @ 61 */
-	
+	keyboard@61 {
+        compatible = "hid-over-i2c";
+		vdd-supply = <&vreg_l10c_3p0>;
+        reg = <0x61>;
+        hid-descr-addr = <0x01>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <15 IRQ_TYPE_LEVEL_LOW>;
+		// interrupts-extended = <&tlmm 15 IRQ_TYPE_LEVEL_LOW>;
+		pinctrl-0 = <&keyboard_default>;
+		pinctrl-names = "default";
+		wakeup-source;
+    };
 };
 
 &i2c4 {
 	status = "okay";
 	clock-frequency = <400000>;
 	
+	typec-mux@19 {
+		compatible = "onnn,nb7vpq904m";
+		reg = <0x19>;
+
+		vcc-supply = <&vreg_s4a_1p8>;
+
+		retimer-switch;
+		orientation-switch;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				redriver_usb_con_ss: endpoint {
+					remote-endpoint = <&pm8150b_typec_mux_in>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				redriver_phy_con_ss: endpoint {
+					remote-endpoint = <&usb_1_qmpphy_out>;
+					data-lanes = <0 1 2 3>;
+				};
+			};
+
+			// port@2 {
+			// 	reg = <2>;
+
+			// 	redriver_usb_con_sbu: endpoint {
+			// 		remote-endpoint = <&pm8150b_typec_sbu_out>;
+			// 	};
+			// };
+		};
+	};
+	/* FSA4480 USB audio switch @ 43 */
+	typec-mux@43 {
+		compatible = "fcs,fsa4480";
+		reg = <0x43>;
+
+		vcc-supply = <&vreg_bob>;
+		mode-switch;
+		orientation-switch;
+
+		port {
+			fsa4480_sbu_mux: endpoint {
+				remote-endpoint = <&pm8150b_typec_sbu_out>;
+			};
+		};
+	};	
 };
 
 &i2c5 {
@@ -788,6 +846,15 @@
 	status = "okay";
 	clock-frequency = <400000>;
 	/* hid-over-i2c ptp @ 60 */
+	touchpad@60 {
+		compatible = "hid-over-i2c";
+		vdd-supply = <&vreg_l10c_3p0>;
+		reg = <0x60>;
+		hid-descr-addr = <0x01>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
+		wakeup-source;
+	};
 	
 };
 
@@ -798,11 +865,10 @@
 	bq27541@55 {
 		compatible = "ti,bq27541";
 		reg = <0x55>;
+		monitored-battery = <&battery>;
 	};
-	/* Qcom SMB1396 slave @ 18 */
 	/* Qcom SMB1396 @ 34 */
 	/* Qcom SMB1396 slave @ 35 */
-	/* Qcom FSA4480 USB-C audio switch @ 43 */
 };
 
 &mdss {
@@ -810,7 +876,7 @@
 };
 
 &mdss_dp {
-	status = "okay";
+	status = "disabled";
 };
 
 &mdss_dp_out {
@@ -1012,12 +1078,18 @@
 	"NC", /* GPIO_10 */
 	"NC",
 	"NC";
-	// vbus_boost_en: vbus-boost-en {
-	// 	pins = "gpio8";
-	// 	function = "normal";
-	// 	output-high;
-	// 	power-source = <0x00>;
-	// };
+	vbus_boost_en: vbus-boost-en {
+		pins = "gpio8";
+		function = "normal";
+		output-high;
+		power-source = <0x00>;
+	};
+	keyboard_default: pogo_fet_ctrl_default {
+		pins = "gpio5";
+		function = "normal";
+		output-low;
+		power-source = <0x00>;
+	};
 };
 
 &pm8150l_gpios {
@@ -1028,7 +1100,7 @@
 	"NC",
 	"AUX2_THERM",
 	"BB_HP_EN",
-	"FP_LDO_EN",
+	"CTN730_EN",
 	"PMX_RESET_N",
 	"NC", /* GPIO_10 */
 	"NC",
@@ -1080,16 +1152,17 @@
 			port@1 {
 				reg = <1>;
 				pm8150b_typec_mux_in: endpoint {
-					remote-endpoint = <&usb_1_qmpphy_out>;
+					remote-endpoint = <&redriver_usb_con_ss>;
 				};
 			};
-			
-			// port@2 {
-			// 	reg = <2>;
-			// 	pm8150b_typec_sbu_out: endpoint {
-			// 		remote-endpoint = <&fsa4480_sbu_mux>;
-			// 	};
-			// };
+
+			port@2 {
+				reg = <2>;
+
+				pm8150b_typec_sbu_out: endpoint {
+					remote-endpoint = <&fsa4480_sbu_mux>;
+				};
+			};
 		};
 	};
 };
@@ -1185,7 +1258,7 @@
 		reset-gpios = <&tlmm 30 GPIO_ACTIVE_LOW>;
 		
 		avdd-supply = <&vreg_l7c_ts_3p0>;
-		vddio-supply = <&ts_1p8_supply>;
+		// vddio-supply = <&ts_1p8_supply>;
 		
 		spi-max-frequency = <1000000>;
 		
@@ -1350,6 +1423,7 @@
 &usb_1_dwc3 {
 	dr_mode = "otg";
 	usb-role-switch;
+	extcon = <&extcon_usb>;
 	maximum-speed = "super-speed-plus-gen2x1";
 };
 
@@ -1375,7 +1449,7 @@
 
 &usb_1_qmpphy {
 	status = "okay";
-	
+	orientation-switch;
 	vdda-phy-supply = <&vreg_l9a_1p2>;
 	vdda-pll-supply = <&vreg_l18a_0p92>;
 };
@@ -1385,7 +1459,7 @@
 };
 
 &usb_1_qmpphy_out {
-	remote-endpoint = <&pm8150b_typec_mux_in>;
+	remote-endpoint = <&redriver_phy_con_ss>;
 };
 
 &venus {
