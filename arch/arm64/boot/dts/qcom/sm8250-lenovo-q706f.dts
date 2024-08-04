@@ -68,6 +68,29 @@
 			
 		};
 	};
+
+	// wcd938x: audio-codec {
+	// 	compatible = "qcom,wcd9380-codec";
+
+	// 	reset-gpios = <&tlmm 32 GPIO_ACTIVE_LOW>;
+
+	// 	vdd-buck-supply = <&vreg_s4a_1p8>;
+	// 	vdd-rxtx-supply = <&vreg_s4a_1p8>;
+	// 	vdd-io-supply = <&vreg_s4a_1p8>;
+	// 	vdd-mic-bias-supply = <&vreg_bob>;
+
+	// 	qcom,micbias1-microvolt = <1800000>;
+	// 	qcom,micbias2-microvolt = <1800000>;
+	// 	qcom,micbias3-microvolt = <1800000>;
+	// 	qcom,micbias4-microvolt = <1800000>;
+	// 	qcom,mbhc-buttons-vthreshold-microvolt = <75000 150000 237000 500000 500000 500000 500000 500000>;
+	// 	qcom,mbhc-headset-vthreshold-microvolt = <1700000>;
+	// 	qcom,mbhc-headphone-vthreshold-microvolt = <50000>;
+	// 	qcom,rx-device = <&wcd_rx>;
+	// 	qcom,tx-device = <&wcd_tx>;
+
+	// 	#sound-dai-cells = <1>;
+	// };
 	
 	gpio-keys {
 		compatible = "gpio-keys";
@@ -141,6 +164,60 @@
 		enable-active-high;
 		regulator-boot-on;
 		regulator-on-in-suspend;
+		regulator-always-on;
+	};
+
+	audio_1p8_supply: audio-1p8-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "audio_1p8_supply";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&tlmm 92 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	audio1_1p8_supply: audio1-1p8-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "audio1_1p8_supply";
+		
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&tlmm 61 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+	audio2_1p8_supply: audio2-1p8-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "audio2_1p8_supply";
+		
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&tlmm 29 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+	// audio3_1p8_supply: audio3-1p8-regulator {
+	// 	compatible = "regulator-fixed";
+	// 	regulator-name = "audio3_1p8_supply";
+	// 	regulator-min-microvolt = <1800000>;
+	// 	regulator-max-microvolt = <1800000>;
+	// 	gpio = <&tlmm 127 GPIO_ACTIVE_HIGH>;
+	// 	enable-active-high;
+	// 	regulator-boot-on;
+	// 	regulator-always-on;
+	// };
+	audio4_1p8_supply: audio4-1p8-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "audio4_1p8_supply";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&tlmm 26 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
 		regulator-always-on;
 	};
 
@@ -239,11 +316,11 @@
 		};
 	};
 	
-	cs35l45_avdd_5p5: cs35l45-gpio-regulator {
+	cs35l45_avdd_3p3: cs35l45-gpio-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "cs35l45_gpio_avdd";
-		regulator-min-microvolt = "5500000";
-		regulator-max-microvolt = "5500000";
+		regulator-min-microvolt = "3300000";
+		regulator-max-microvolt = "3300000";
 		regulator-enable-ramp-delay = <233>;
 		gpio = <&tlmm 49 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
@@ -366,6 +443,7 @@
 			regulator-max-microvolt = <1920000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 			regulator-allow-set-load;
+			regulator-always-on;
 		};
 		
 		vreg_s5a_1p9: smps5 {
@@ -453,6 +531,8 @@
 			regulator-min-microvolt = <3008000>;
 			regulator-max-microvolt = <3008000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+			regulator-allow-set-load;
+			regulator-always-on;
 		};
 		// display vddio/vddi
 		vreg_l14a_1p8: ldo14 {
@@ -806,29 +886,56 @@
 	
 	// SPK1-cs35l45
 	// SPK1_fast_switch_music.txt SPK1_fast_switch_ring.txt SPK1_fast_switch_voice.txt
-	// cs35l41_l: speaker-amp@30 {
+	cs35l45_spk1: speaker-amp@30 {
+		compatible = "cirrus,cs35l45";
+		reg = <0x30>;
+		vdd-a-supply = <&cs35l45_avdd_3p3>;
+		interrupts-extended = <&tlmm 24 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
+		cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
+		#sound-dai-cells = <1>;
+		sound-name-prefix = "SPK1"; //SPK1-cs35l45
+		cirrus,gpio-ctrl2 {
+			gpio-ctrl = <0x2>;
+		};
+	};
+	
+	cs35l45_spk2: speaker-amp@31 {
+		compatible = "cirrus,cs35l45";
+		reg = <0x31>;
+		vdd-a-supply = <&cs35l45_avdd_3p3>;
+		interrupts-extended = <&tlmm 102 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
+		cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
+		#sound-dai-cells = <1>;
+		sound-name-prefix = "SPK2";//SPK2-cs35l45
+		cirrus,gpio-ctrl2 {
+			gpio-ctrl = <0x2>;
+		};
+	};
+
+	// cs35l41_spk3: speaker-amp@36 {
 	// 	compatible = "cirrus,cs35l45";
-	// 	reg = <0x30>;
-	// 	vdd-a-supply = <&cs35l45_avdd_5p5>;
-	// 	interrupts-extended = <&tlmm 24 IRQ_TYPE_LEVEL_LOW>;
+	// 	reg = <0x36>;
+	// 	vdd-a-supply = <&cs35l45_avdd_3p3>;
+	// 	interrupts-extended = <&tlmm 100 IRQ_TYPE_LEVEL_LOW>;
 	// 	reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
 	// 	cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
 	// 	#sound-dai-cells = <1>;
-		
+	// 	sound-name-prefix = "SPK3";//SPK3-cs35l45
 	// 	cirrus,gpio-ctrl2 {
 	// 		gpio-ctrl = <0x2>;
 	// 	};
 	// };
-	
-	// cs35l41_r: speaker-amp@31 {
+	// cs35l41_spk4: speaker-amp@37 {
 	// 	compatible = "cirrus,cs35l45";
-	// 	reg = <0x31>;
-	// 	vdd-a-supply = <&cs35l45_avdd_5p5>;
-	// 	interrupts-extended = <&tlmm 102 IRQ_TYPE_LEVEL_LOW>;
+	// 	reg = <0x37>;
+	// 	vdd-a-supply = <&cs35l45_avdd_3p3>;
+	// 	interrupts-extended = <&tlmm 93 IRQ_TYPE_LEVEL_LOW>;
 	// 	reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
 	// 	cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
 	// 	#sound-dai-cells = <1>;
-		
+	// 	sound-name-prefix = "SPK4";//SPK4-cs35l45
 	// 	cirrus,gpio-ctrl2 {
 	// 		gpio-ctrl = <0x2>;
 	// 	};
@@ -1204,7 +1311,31 @@
 &qupv3_id_2 {
 	status = "okay";
 };
+// &q6asmdai {
+// 	dai@0 {
+// 		reg = <0>;
+// 	};
 
+// 	dai@1 {
+// 		reg = <1>;
+// 	};
+
+// 	dai@2 {
+// 		reg = <2>;
+// 	};
+
+// 	dai@3 {
+// 		reg = <3>;
+// 	};
+
+// 	dai@4 {
+// 		reg = <4>;
+// 	};
+
+// 	dai@5 {
+// 		reg = <5>;
+// 	};
+// };
 &sdhc_2 {
 	status = "okay";
 	
@@ -1219,15 +1350,33 @@
 };
 
 &q6afedai {
-	dai@56 {
-		reg = <TERTIARY_TDM_RX_0>;
+	// dai@24 {
+	// 	reg = <PRIMARY_TDM_RX_0>;
+	// 	qcom,tdm-sync-mode = <0>;
+	// 	qcom,tdm-sync-src = <1>;
+	// 	qcom,tdm-data-out = <0>;
+	// 	qcom,tdm-invert-sync = <1>;
+	// 	qcom,tdm-data-delay = <1>;
+	// 	qcom,tdm-data-align = <0>;
+	// };
+	dai@24 {
+		reg = <PRIMARY_TDM_RX_0>;
 		qcom,tdm-sync-mode = <0>;
 		qcom,tdm-sync-src = <1>;
 		qcom,tdm-data-out = <0>;
-		qcom,tdm-invert-sync = <1>;
+		qcom,tdm-invert-sync = <0>;
 		qcom,tdm-data-delay = <1>;
 		qcom,tdm-data-align = <0>;
 	};
+	// dai@56 {
+	// 	reg = <TERTIARY_TDM_RX_0>;
+	// 	qcom,tdm-sync-mode = <0>;
+	// 	qcom,tdm-sync-src = <1>;
+	// 	qcom,tdm-data-out = <0>;
+	// 	qcom,tdm-invert-sync = <1>;
+	// 	qcom,tdm-data-delay = <1>;
+	// 	qcom,tdm-data-align = <0>;
+	// };
 };
 
 &q6asmdai {
@@ -1242,6 +1391,122 @@
 	firmware-name = "qcom/sm8250/q706f/slpi.mbn";
 };
 
+// &rxmacro {
+// 	status = "okay";
+// };
+
+&sound {
+	compatible = "qcom,sm8250-sndcard";
+	model = "Xiaoxin Pad Pro";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pri_tdm_active>;
+	// pinctrl-0 = <&tert_tdm_active>;
+	mm1-dai-link {
+		link-name = "MultiMedia1";
+
+		cpu {
+			sound-dai = <&q6asmdai  MSM_FRONTEND_DAI_MULTIMEDIA1>;
+		};
+	};
+
+	speaker-dai-link {
+		link-name = "Primary TDM Playback";
+
+		cpu {
+			sound-dai = <&q6afedai PRIMARY_TDM_RX_0>;
+		};
+
+		platform {
+			sound-dai = <&q6routing>;
+		};
+
+		codec {
+			sound-dai = <&cs35l45_spk1 0>, <&cs35l45_spk2 0>;
+						// <&cs35l41_spk3 0>, <&cs35l41_spk4 0>;
+		};
+	};
+};
+// &sound {
+// 	compatible = "qcom,sm8250-sndcard";
+// 	model = "Xiaoxin Pad Pro";
+
+// 	mm1-dai-link {
+// 		link-name = "MultiMedia1";
+// 		cpu {
+// 			sound-dai = <&q6asmdai  MSM_FRONTEND_DAI_MULTIMEDIA1>;
+// 		};
+// 	};
+
+// 	mm2-dai-link {
+// 		link-name = "MultiMedia2";
+// 		cpu {
+// 			sound-dai = <&q6asmdai  MSM_FRONTEND_DAI_MULTIMEDIA2>;
+// 		};
+// 	};
+
+// 	mm3-dai-link {
+// 		link-name = "MultiMedia3";
+// 		cpu {
+// 			sound-dai = <&q6asmdai  MSM_FRONTEND_DAI_MULTIMEDIA3>;
+// 		};
+// 	};
+
+// 	wcd-playback-dai-link {
+// 		link-name = "WCD Playback";
+// 		cpu {
+// 			sound-dai = <&q6afedai RX_CODEC_DMA_RX_0>;
+// 		};
+// 		codec {
+// 			sound-dai = <&wcd938x 0>, <&swr1 0>, <&rxmacro 0>;
+// 		};
+// 		platform {
+// 			sound-dai = <&q6routing>;
+// 		};
+// 	};
+
+// 	wcd-capture-dai-link {
+// 		link-name = "WCD Capture";
+// 		cpu {
+// 			sound-dai = <&q6afedai TX_CODEC_DMA_TX_3>;
+// 		};
+
+// 		codec {
+// 			sound-dai = <&wcd938x 1>, <&swr2 0>, <&txmacro 0>;
+// 		};
+// 		platform {
+// 			sound-dai = <&q6routing>;
+// 		};
+// 	};
+
+// 	wsa-dai-link {
+// 		link-name = "WSA Playback";
+// 		cpu {
+// 			sound-dai = <&q6afedai WSA_CODEC_DMA_RX_0>;
+// 		};
+
+// 		codec {
+// 			sound-dai = <&wsamacro 0>, <&cs35l45_spk1 0>,<&cs35l45_spk2 0>;
+// 		};
+// 		platform {
+// 			sound-dai = <&q6routing>;
+// 		};
+// 	};
+
+// 	va-dai-link {
+// 		link-name = "VA Capture";
+// 		cpu {
+// 			sound-dai = <&q6afedai VA_CODEC_DMA_TX_0>;
+// 		};
+
+// 		platform {
+// 			sound-dai = <&q6routing>;
+// 		};
+
+// 		codec {
+// 			sound-dai = <&vamacro 0>;
+// 		};
+// 	};
+// };
 &spi13 {
 	status = "okay";
 	pinctrl-names = "default";
@@ -1270,9 +1535,114 @@
 	};
 };
 
+// &swr0 {
+// 	status = "okay";
+
+// 	left_spkr: speaker@0,3 {
+// 		compatible = "sdw10217211000";
+// 		reg = <0 3>;
+// 		powerdown-gpios = <&tlmm 26 GPIO_ACTIVE_LOW>;
+// 		#thermal-sensor-cells = <0>;
+// 		sound-name-prefix = "SpkrLeft";
+// 		#sound-dai-cells = <0>;
+// 	};
+
+// 	right_spkr: speaker@0,4 {
+// 		compatible = "sdw10217211000";
+// 		reg = <0 4>;
+// 		powerdown-gpios = <&tlmm 127 GPIO_ACTIVE_LOW>;
+// 		#thermal-sensor-cells = <0>;
+// 		sound-name-prefix = "SpkrRight";
+// 		#sound-dai-cells = <0>;
+// 	};
+// };
+
+// &swr1 {
+// 	status = "okay";
+
+// 	wcd_rx: wcd9380-rx@0,4 {
+// 		compatible = "sdw20217010d00";
+// 		reg = <0 4>;
+// 		qcom,rx-port-mapping = <1 2 3 4 5>;
+// 	};
+// };
+
+// &swr2 {
+// 	status = "okay";
+
+// 	wcd_tx: wcd9380-tx@0,3 {
+// 		compatible = "sdw20217010d00";
+// 		reg = <0 3>;
+// 		qcom,tx-port-mapping = <2 3 4 5>;
+// 	};
+// };
 &tlmm {
 	gpio-reserved-ranges = <40 4>;
-	
+
+	pri_tdm_active: pri-tdm-active-state {
+		sck-pins {
+			pins = "gpio138";
+			function = "mi2s0_sck";
+			drive-strength = <8>;
+			bias-disable;
+			output-high;
+		};
+
+		din-pins {
+			pins = "gpio139";
+			function = "mi2s0_data0";
+			drive-strength = <8>;
+			bias-disable;
+		};
+
+		ws-pins {
+			pins = "gpio141";
+			function = "mi2s0_ws";
+			drive-strength = <8>;
+			bias-disable;
+			output-high;
+		};
+
+		dout-pins {
+			pins = "gpio140";
+			function = "mi2s0_data1";
+			drive-strength = <8>;
+			bias-disable;
+		};
+	};
+
+	tert_tdm_active: tert-tdm-active-state {
+		sck-pins {
+			pins = "gpio133";
+			function = "mi2s2_sck";
+			drive-strength = <8>;
+			bias-disable;
+			output-high;
+		};
+
+		din-pins {
+			pins = "gpio134";
+			function = "mi2s2_data0";
+			drive-strength = <8>;
+			bias-disable;
+		};
+
+		ws-pins {
+			pins = "gpio135";
+			function = "mi2s2_ws";
+			drive-strength = <8>;
+			bias-disable;
+			output-high;
+		};
+
+		dout-pins {
+			pins = "gpio137";
+			function = "mi2s2_data1";
+			drive-strength = <8>;
+			bias-disable;
+		};
+	};
+
 	cam0_default: cam0-default-state {
 		mclk0-pins {
 			pins = "gpio94";
@@ -1377,7 +1747,35 @@
 		bias-pull-up;
 		drive-strength = <2>;
 	};
+
+	muic_i2c_default: muic-i2c-default-state {
+		pins = "gpio12", "gpio13";
+		function = "gpio";
+
+		drive-strength = <2>;
+		bias-disable;
+	};
+	wcd938x_reset_default: wcd938x-reset-default-state {
+		pins = "gpio32";
+		function = "gpio";
+		drive-strength = <16>;
+		output-high;
+	};
+
+	wcd938x_reset_sleep: wcd938x-reset-sleep-state {
+		pins = "gpio32";
+		function = "gpio";
+		drive-strength = <16>;
+		bias-disable;
+		output-low;
+	};
 };
+// &txmacro {
+// 	status = "okay";
+// };
+// &wsamacro {
+// 	status = "okay";
+// };
 
 &uart6 {
 	status = "okay";
