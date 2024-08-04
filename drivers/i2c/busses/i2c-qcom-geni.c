@@ -2,7 +2,6 @@
 // Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
 
 #include <linux/acpi.h>
-#include <linux/bitfield.h>
 #include <linux/clk.h>
 #include <linux/dmaengine.h>
 #include <linux/dma-mapping.h>
@@ -67,7 +66,6 @@ enum geni_i2c_err_code {
 	GENI_TIMEOUT,
 };
 
-#define I2C_DMA_TX_IRQ_MASK	GENMASK(12, 5)
 #define DM_I2C_CB_ERR		((BIT(NACK) | BIT(BUS_PROTO) | BIT(ARB_LOST)) \
 									<< 5)
 
@@ -101,7 +99,6 @@ struct geni_i2c_dev {
 	struct dma_chan *rx_c;
 	bool gpi_mode;
 	bool abort_done;
-	struct gpi_i2c_result i2c_result;
 };
 
 struct geni_i2c_desc {
@@ -487,18 +484,9 @@ static int geni_i2c_tx_one_msg(struct geni_i2c_dev *gi2c, struct i2c_msg *msg,
 
 static void i2c_gpi_cb_result(void *cb, const struct dmaengine_result *result)
 {
-	struct gpi_i2c_result *i2c_res = cb;
-	struct geni_i2c_dev *gi2c = container_of(i2c_res, struct geni_i2c_dev, i2c_result);
-	u32 status;
+	struct geni_i2c_dev *gi2c = cb;
 
-	status = FIELD_GET(I2C_DMA_TX_IRQ_MASK, i2c_res->status);
-	if (status == BIT(NACK)) {
-		geni_i2c_err(gi2c, NACK);
-	} else if (status == BIT(BUS_PROTO)) {
-		geni_i2c_err(gi2c, BUS_PROTO);
-	} else if (status == BIT(ARB_LOST)) {
-		geni_i2c_err(gi2c, ARB_LOST);
-	} else if (result->result != DMA_TRANS_NOERROR) {
+	if (result->result != DMA_TRANS_NOERROR) {
 		dev_err(gi2c->se.dev, "DMA txn failed:%d\n", result->result);
 		gi2c->err = -EIO;
 	} else if (result->residue) {
@@ -580,7 +568,7 @@ static int geni_i2c_gpi(struct geni_i2c_dev *gi2c, struct i2c_msg *msg,
 	}
 
 	desc->callback_result = i2c_gpi_cb_result;
-	desc->callback_param = &gi2c->i2c_result;
+	desc->callback_param = gi2c;
 
 	dmaengine_submit(desc);
 	*buf = dma_buf;
