@@ -846,15 +846,15 @@
 	status = "okay";
 	clock-frequency = <400000>;
 	/* hid-over-i2c ptp @ 60 */
-	touchpad@60 {
-		compatible = "hid-over-i2c";
-		vdd-supply = <&vreg_l10c_3p0>;
-		reg = <0x60>;
-		hid-descr-addr = <0x01>;
-		interrupt-parent = <&tlmm>;
-		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
-		wakeup-source;
-	};
+	// touchpad@60 {
+	// 	compatible = "hid-over-i2c";
+	// 	vdd-supply = <&vreg_l10c_3p0>;
+	// 	reg = <0x60>;
+	// 	hid-descr-addr = <0x01>;
+	// 	interrupt-parent = <&tlmm>;
+	// 	interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
+	// 	wakeup-source;
+	// };
 	
 };
 
