@@ -904,7 +904,7 @@
 		compatible = "cirrus,cs35l45";
 		reg = <0x31>;
 		vdd-a-supply = <&cs35l45_avdd_3p3>;
-		interrupts-extended = <&tlmm 102 IRQ_TYPE_LEVEL_LOW>;
+		interrupts-extended = <&tlmm 51 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
 		cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
 		#sound-dai-cells = <1>;
