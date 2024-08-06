@@ -167,54 +167,56 @@
 		regulator-always-on;
 	};
 
-	audio_1p8_supply: audio-1p8-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "audio_1p8_supply";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		gpio = <&tlmm 92 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	audio1_1p8_supply: audio1-1p8-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "audio1_1p8_supply";
-		
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		gpio = <&tlmm 61 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-	audio2_1p8_supply: audio2-1p8-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "audio2_1p8_supply";
-		
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		gpio = <&tlmm 29 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-	// audio3_1p8_supply: audio3-1p8-regulator {
+	// audio_1p8_supply: audio-1p8-regulator {
 	// 	compatible = "regulator-fixed";
-	// 	regulator-name = "audio3_1p8_supply";
+	// 	regulator-name = "audio_1p8_supply";
 	// 	regulator-min-microvolt = <1800000>;
 	// 	regulator-max-microvolt = <1800000>;
-	// 	gpio = <&tlmm 127 GPIO_ACTIVE_HIGH>;
+	// 	gpio = <&tlmm 92 GPIO_ACTIVE_HIGH>;
 	// 	enable-active-high;
 	// 	regulator-boot-on;
 	// 	regulator-always-on;
 	// };
+
+	// audio1_1p8_supply: audio1-1p8-regulator {
+	// 	compatible = "regulator-fixed";
+	// 	regulator-name = "audio1_1p8_supply";
+		
+	// 	regulator-min-microvolt = <1800000>;
+	// 	regulator-max-microvolt = <1800000>;
+	// 	gpio = <&tlmm 61 GPIO_ACTIVE_HIGH>;
+	// 	enable-active-high;
+	// 	regulator-boot-on;
+	// 	regulator-always-on;
+	// };
+	// audio2_1p8_supply: audio2-1p8-regulator {
+	// 	compatible = "regulator-fixed";
+	// 	regulator-name = "audio2_1p8_supply";
+		
+	// 	regulator-min-microvolt = <1800000>;
+	// 	regulator-max-microvolt = <1800000>;
+	// 	gpio = <&tlmm 29 GPIO_ACTIVE_HIGH>;
+	// 	enable-active-high;
+	// 	regulator-boot-on;
+	// 	regulator-always-on;
+	// };
+	// // audio3_1p8_supply: audio3-1p8-regulator {
+	// // 	compatible = "regulator-fixed";
+	// // 	regulator-name = "audio3_1p8_supply";
+	// // 	regulator-min-microvolt = <1800000>;
+	// // 	regulator-max-microvolt = <1800000>;
+	// // 	gpio = <&tlmm 127 GPIO_ACTIVE_HIGH>;
+	// // 	enable-active-high;
+	// // 	regulator-boot-on;
+	// // 	regulator-always-on;
+	// // };
 	audio4_1p8_supply: audio4-1p8-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "audio4_1p8_supply";
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&spkr_1_sd_n_active>;
 		gpio = <&tlmm 26 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-boot-on;
@@ -314,19 +316,6 @@
 				regulator-name = "vreg_pmu_pcie_1p8";
 			};
 		};
-	};
-	
-	cs35l45_avdd_3p3: cs35l45-gpio-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "cs35l45_gpio_avdd";
-		regulator-min-microvolt = "3300000";
-		regulator-max-microvolt = "3300000";
-		regulator-enable-ramp-delay = <233>;
-		gpio = <&tlmm 49 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
-
 	};
 };
 
@@ -889,8 +878,11 @@
 	cs35l45_spk1: speaker-amp@30 {
 		compatible = "cirrus,cs35l45";
 		reg = <0x30>;
-		vdd-a-supply = <&cs35l45_avdd_3p3>;
+		vdd-a-supply = <&vreg_s4a_1p8>;
+		vdd-batt = <&audio4_1p8_supply>;
 		interrupts-extended = <&tlmm 24 IRQ_TYPE_LEVEL_LOW>;
+		pinctrl-0 = <&cs35l45_1_irq_default &cs35l45_reset_default &cs35l45_1v8_enable>;
+		pinctrl-names = "default";
 		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
 		cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
 		#sound-dai-cells = <1>;
@@ -903,9 +895,12 @@
 	cs35l45_spk2: speaker-amp@31 {
 		compatible = "cirrus,cs35l45";
 		reg = <0x31>;
-		vdd-a-supply = <&cs35l45_avdd_3p3>;
+		vdd-a-supply = <&vreg_s4a_1p8>;
+		vdd-batt = <&audio4_1p8_supply>;
 		interrupts-extended = <&tlmm 51 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
+		pinctrl-0 = <&cs35l45_2_irq_default &cs35l45_reset_default &cs35l45_1v8_enable>;
+		pinctrl-names = "default";
 		cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
 		#sound-dai-cells = <1>;
 		sound-name-prefix = "SPK2";//SPK2-cs35l45
@@ -914,32 +909,39 @@
 		};
 	};
 
-	// cs35l41_spk3: speaker-amp@36 {
-	// 	compatible = "cirrus,cs35l45";
-	// 	reg = <0x36>;
-	// 	vdd-a-supply = <&cs35l45_avdd_3p3>;
-	// 	interrupts-extended = <&tlmm 100 IRQ_TYPE_LEVEL_LOW>;
-	// 	reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
-	// 	cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
-	// 	#sound-dai-cells = <1>;
-	// 	sound-name-prefix = "SPK3";//SPK3-cs35l45
-	// 	cirrus,gpio-ctrl2 {
-	// 		gpio-ctrl = <0x2>;
-	// 	};
-	// };
-	// cs35l41_spk4: speaker-amp@37 {
-	// 	compatible = "cirrus,cs35l45";
-	// 	reg = <0x37>;
-	// 	vdd-a-supply = <&cs35l45_avdd_3p3>;
-	// 	interrupts-extended = <&tlmm 93 IRQ_TYPE_LEVEL_LOW>;
-	// 	reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
-	// 	cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
-	// 	#sound-dai-cells = <1>;
-	// 	sound-name-prefix = "SPK4";//SPK4-cs35l45
-	// 	cirrus,gpio-ctrl2 {
-	// 		gpio-ctrl = <0x2>;
-	// 	};
-	// };
+	cs35l41_spk3: speaker-amp@36 {
+		compatible = "cirrus,cs35l45";
+		reg = <0x36>;
+		vdd-a-supply = <&vreg_s4a_1p8>;
+		vdd-batt = <&audio4_1p8_supply>;
+		pinctrl-0 = <&cs35l45_3_irq_default &cs35l45_reset_default &cs35l45_1v8_enable>;
+		pinctrl-names = "default";
+		interrupts-extended = <&tlmm 100 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
+		cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
+		#sound-dai-cells = <1>;
+		sound-name-prefix = "SPK3";//SPK3-cs35l45
+		cirrus,gpio-ctrl2 {
+			gpio-ctrl = <0x2>;
+		};
+	};
+
+	cs35l41_spk4: speaker-amp@37 {
+		compatible = "cirrus,cs35l45";
+		reg = <0x37>;
+		vdd-a-supply = <&vreg_s4a_1p8>;
+		vdd-batt = <&audio4_1p8_supply>;
+		pinctrl-0 = <&cs35l45_4_irq_default &cs35l45_reset_default &cs35l45_1v8_enable>;
+		pinctrl-names = "default";
+		interrupts-extended = <&tlmm 93 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
+		cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
+		#sound-dai-cells = <1>;
+		sound-name-prefix = "SPK4";//SPK4-cs35l45
+		cirrus,gpio-ctrl2 {
+			gpio-ctrl = <0x2>;
+		};
+	};
 	/* Cirrus CS35L45 (Speaker 1) @ 30 */
 	/* Cirrus CS35L45 (Speaker 2) @ 31 */
 	/* Cirrus CS35L45 (Speaker 3) @ 36 */
@@ -976,6 +978,102 @@
 	};
 	/* Qcom SMB1396 @ 34 */
 	/* Qcom SMB1396 slave @ 35 */
+};
+
+&lpass_tlmm {
+	// gpio-reserved-ranges = <0 14>;
+	
+	lpi_i2s2: lpi-i2s2-active-state {
+		sck-pins {
+			pins = "gpio10";
+			function = "i2s2_clk";
+			drive-strength = <8>;
+			bias-disable;
+			output-high;
+		};
+
+		din-pins {
+			pins = "gpio12";
+			function = "i2s2_data";
+			drive-strength = <8>;
+			bias-disable;
+		};
+
+		ws-pins {
+			pins = "gpio11";
+			function = "i2s2_ws";
+			drive-strength = <8>;
+			bias-disable;
+			output-high;
+		};
+
+		dout-pins {
+			pins = "gpio13";
+			function = "i2s2_data";
+			drive-strength = <8>;
+			bias-disable;
+		};
+	};
+	// lpi_i2s2_sck_active {
+	// 	phandle = <0x700>;
+
+	// 	mux {
+	// 		pins = "gpio10";
+	// 		function = "func1";
+	// 	};
+
+	// 	config {
+	// 		pins = "gpio10";
+	// 		drive-strength = <0x08>;
+	// 		bias-disable;
+	// 		output-high;
+	// 	};
+	// };
+	// lpi_i2s2_ws_active {
+	// 	phandle = <0x701>;
+
+	// 	mux {
+	// 		pins = "gpio11";
+	// 		function = "func1";
+	// 	};
+
+	// 	config {
+	// 		pins = "gpio11";
+	// 		drive-strength = <0x08>;
+	// 		bias-disable;
+	// 		output-high;
+	// 	};
+	// };
+	// lpi_i2s2_sd0_active {
+	// 	phandle = <0x702>;
+
+	// 	mux {
+	// 		pins = "gpio12";
+	// 		function = "func2";
+	// 	};
+
+	// 	config {
+	// 		pins = "gpio12";
+	// 		drive-strength = <0x08>;
+	// 		bias-disable;
+	// 		output-high;
+	// 	};
+	// };
+	// lpi_i2s2_sd1_active {
+	// 	phandle = <0x703>;
+
+	// 	mux {
+	// 		pins = "gpio13";
+	// 		function = "func2";
+	// 	};
+
+	// 	config {
+	// 		pins = "gpio13";
+	// 		drive-strength = <0x08>;
+	// 		bias-disable;
+	// 		output-high;
+	// 	};
+	// };
 };
 
 &mdss {
@@ -1399,7 +1497,7 @@
 	compatible = "qcom,sm8250-sndcard";
 	model = "Xiaoxin Pad Pro";
 	pinctrl-names = "default";
-	pinctrl-0 = <&pri_tdm_active>;
+	pinctrl-0 = <&pri_tdm_active &lpi_i2s2>;
 	// pinctrl-0 = <&tert_tdm_active>;
 	mm1-dai-link {
 		link-name = "MultiMedia1";
@@ -1421,8 +1519,8 @@
 		};
 
 		codec {
-			sound-dai = <&cs35l45_spk1 0>, <&cs35l45_spk2 0>;
-						// <&cs35l41_spk3 0>, <&cs35l41_spk4 0>;
+			sound-dai = <&cs35l45_spk1 0>, <&cs35l45_spk2 0>,
+						<&cs35l41_spk3 0>, <&cs35l41_spk4 0>;
 		};
 	};
 };
@@ -1651,6 +1749,61 @@
 			drive-strength = <16>;
 			bias-disable;
 		};
+	};
+
+	spkr_1_sd_n_active: spkr-1-sd-n-active {
+		pins = "gpio26", "gpio29";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
+		output-high;
+	};
+	
+	cs35l45_1_irq_default: cs35l45-1-irq-default {
+		pins = "gpio24";
+		function = "gpio";
+		drive-strength = <0x02>;
+		bias-pull-up;
+		input-enable;
+	};
+
+	cs35l45_2_irq_default: cs35l45-2-irq-default {
+		pins = "gpio51";
+		function = "gpio";
+		drive-strength = <0x02>;
+		bias-pull-up;
+	};
+
+	cs35l45_3_irq_default: cs35l45-3-irq-default {
+		pins = "gpio100";
+		function = "gpio";
+		drive-strength = <0x02>;
+		bias-pull-up;
+		input-enable;
+	};
+
+	cs35l45_4_irq_default: cs35l45-4-irq-default {
+		pins = "gpio93";
+		function = "gpio";
+		drive-strength = <0x02>;
+		bias-pull-up;
+		input-enable;
+	};
+
+	cs35l45_reset_default: cs35l45-reset-default {
+		pins = "gpio127";
+		// drive-strength = <0x02>;
+		// bias-pull-up;
+		drive-strength = <8>;
+		bias-disable;
+		output-high;
+	};
+
+	cs35l45_1v8_enable: cs35l45-1v8-enable {
+		pins = "gpio49";
+		drive-strength = <0x10>;
+		bias-disable;
+		output-high;
 	};
 	
 	bt_en_state: bt-default-state {
