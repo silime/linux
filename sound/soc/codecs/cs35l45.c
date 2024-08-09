@@ -601,6 +601,7 @@ static DECLARE_TLV_DB_SCALE(amp_gain_tlv, 1000, 300, 0);
 static const DECLARE_TLV_DB_SCALE(cs35l45_dig_pcm_vol_tlv, -10225, 25, true);
 
 static const struct snd_kcontrol_new cs35l45_controls[] = {
+	SOC_ENUM("AMP PCM Gain", gain_enum),
 	SOC_ENUM_EXT("Amplifier Mode", amplifier_mode_enum,
 		     cs35l45_amplifier_mode_get, cs35l45_amplifier_mode_put),
 	SOC_SINGLE_TLV("Analog PCM Volume", CS35L45_AMP_GAIN,
