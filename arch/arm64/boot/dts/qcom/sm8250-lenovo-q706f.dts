@@ -38,7 +38,6 @@
 	qcom,board-id = <0x30d08 0>;
 	
 	aliases {
-		serial0 = &uart12;
 		serial1 = &uart6;
 	};
 	
@@ -167,49 +166,52 @@
 		regulator-always-on;
 	};
 
-	// audio_1p8_supply: audio-1p8-regulator {
-	// 	compatible = "regulator-fixed";
-	// 	regulator-name = "audio_1p8_supply";
-	// 	regulator-min-microvolt = <1800000>;
-	// 	regulator-max-microvolt = <1800000>;
-	// 	gpio = <&tlmm 92 GPIO_ACTIVE_HIGH>;
-	// 	enable-active-high;
-	// 	regulator-boot-on;
-	// 	regulator-always-on;
-	// };
+	audio_1p8_supply: audio-1p8-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "audio_1p8_supply";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		//cs35l45_1v8_enable
+		pinctrl-names = "default";
+		pinctrl-0 = <&cs35l45_1v8_enable>;
+		gpio = <&tlmm 49 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
 
-	// audio1_1p8_supply: audio1-1p8-regulator {
-	// 	compatible = "regulator-fixed";
-	// 	regulator-name = "audio1_1p8_supply";
+	avdd_1p3_supply: audio1-1p8-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "audio1_1p8_supply";
 		
-	// 	regulator-min-microvolt = <1800000>;
-	// 	regulator-max-microvolt = <1800000>;
-	// 	gpio = <&tlmm 61 GPIO_ACTIVE_HIGH>;
-	// 	enable-active-high;
-	// 	regulator-boot-on;
-	// 	regulator-always-on;
-	// };
-	// audio2_1p8_supply: audio2-1p8-regulator {
-	// 	compatible = "regulator-fixed";
-	// 	regulator-name = "audio2_1p8_supply";
+		regulator-min-microvolt = <1300000>;
+		regulator-max-microvolt = <1300000>;
+		gpio = <&tlmm 61 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+	audio2_1p8_supply: audio2-1p8-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "audio2_1p8_supply";
 		
-	// 	regulator-min-microvolt = <1800000>;
-	// 	regulator-max-microvolt = <1800000>;
-	// 	gpio = <&tlmm 29 GPIO_ACTIVE_HIGH>;
-	// 	enable-active-high;
-	// 	regulator-boot-on;
-	// 	regulator-always-on;
-	// };
-	// // audio3_1p8_supply: audio3-1p8-regulator {
-	// // 	compatible = "regulator-fixed";
-	// // 	regulator-name = "audio3_1p8_supply";
-	// // 	regulator-min-microvolt = <1800000>;
-	// // 	regulator-max-microvolt = <1800000>;
-	// // 	gpio = <&tlmm 127 GPIO_ACTIVE_HIGH>;
-	// // 	enable-active-high;
-	// // 	regulator-boot-on;
-	// // 	regulator-always-on;
-	// // };
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&tlmm 29 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+	audio3_1p8_supply: audio3-1p8-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "audio3_1p8_supply";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&tlmm 127 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
 	audio4_1p8_supply: audio4-1p8-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "audio4_1p8_supply";
@@ -879,9 +881,11 @@
 		compatible = "cirrus,cs35l45";
 		reg = <0x30>;
 		vdd-a-supply = <&vreg_s4a_1p8>;
-		vdd-batt = <&audio4_1p8_supply>;
-		interrupts-extended = <&tlmm 24 IRQ_TYPE_LEVEL_LOW>;
-		pinctrl-0 = <&cs35l45_1_irq_default &cs35l45_reset_default &cs35l45_1v8_enable>;
+		vdd-batt-supply = <&audio4_1p8_supply>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <24 IRQ_TYPE_LEVEL_LOW>;
+		// interrupts-extended = <&tlmm 24 IRQ_TYPE_LEVEL_LOW>;
+		pinctrl-0 = <&cs35l45_1_irq_default &cs35l45_1v8_enable>;
 		pinctrl-names = "default";
 		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
 		cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
@@ -896,10 +900,12 @@
 		compatible = "cirrus,cs35l45";
 		reg = <0x31>;
 		vdd-a-supply = <&vreg_s4a_1p8>;
-		vdd-batt = <&audio4_1p8_supply>;
-		interrupts-extended = <&tlmm 51 IRQ_TYPE_LEVEL_LOW>;
+		vdd-batt-supply = <&audio4_1p8_supply>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <51 IRQ_TYPE_LEVEL_LOW>;
+		// interrupts-extended = <&tlmm 51 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
-		pinctrl-0 = <&cs35l45_2_irq_default &cs35l45_reset_default &cs35l45_1v8_enable>;
+		pinctrl-0 = <&cs35l45_2_irq_default &cs35l45_1v8_enable>;
 		pinctrl-names = "default";
 		cirrus,asp-sdout-hiz-ctrl = <(CS35L45_ASP_TX_HIZ_UNUSED | CS35L45_ASP_TX_HIZ_DISABLED)>;
 		#sound-dai-cells = <1>;
@@ -913,8 +919,8 @@
 		compatible = "cirrus,cs35l45";
 		reg = <0x36>;
 		vdd-a-supply = <&vreg_s4a_1p8>;
-		vdd-batt = <&audio4_1p8_supply>;
-		pinctrl-0 = <&cs35l45_3_irq_default &cs35l45_reset_default &cs35l45_1v8_enable>;
+		vdd-batt-supply = <&audio4_1p8_supply>;
+		pinctrl-0 = <&cs35l45_3_irq_default &cs35l45_1v8_enable>;
 		pinctrl-names = "default";
 		interrupts-extended = <&tlmm 100 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
@@ -930,8 +936,8 @@
 		compatible = "cirrus,cs35l45";
 		reg = <0x37>;
 		vdd-a-supply = <&vreg_s4a_1p8>;
-		vdd-batt = <&audio4_1p8_supply>;
-		pinctrl-0 = <&cs35l45_4_irq_default &cs35l45_reset_default &cs35l45_1v8_enable>;
+		vdd-batt-supply = <&audio4_1p8_supply>;
+		pinctrl-0 = <&cs35l45_4_irq_default &cs35l45_1v8_enable>;
 		pinctrl-names = "default";
 		interrupts-extended = <&tlmm 93 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&tlmm 127 GPIO_ACTIVE_HIGH>;
@@ -983,37 +989,37 @@
 &lpass_tlmm {
 	// gpio-reserved-ranges = <0 14>;
 	
-	lpi_i2s2: lpi-i2s2-active-state {
-		sck-pins {
-			pins = "gpio10";
-			function = "i2s2_clk";
-			drive-strength = <8>;
-			bias-disable;
-			output-high;
-		};
+	// lpi_i2s2: lpi-i2s2-active-state {
+	// 	sck-pins {
+	// 		pins = "gpio10";
+	// 		function = "i2s2_clk";
+	// 		drive-strength = <8>;
+	// 		bias-disable;
+	// 		output-high;
+	// 	};
 
-		din-pins {
-			pins = "gpio12";
-			function = "i2s2_data";
-			drive-strength = <8>;
-			bias-disable;
-		};
+	// 	din-pins {
+	// 		pins = "gpio12";
+	// 		function = "i2s2_data";
+	// 		drive-strength = <8>;
+	// 		bias-disable;
+	// 	};
 
-		ws-pins {
-			pins = "gpio11";
-			function = "i2s2_ws";
-			drive-strength = <8>;
-			bias-disable;
-			output-high;
-		};
+	// 	ws-pins {
+	// 		pins = "gpio11";
+	// 		function = "i2s2_ws";
+	// 		drive-strength = <8>;
+	// 		bias-disable;
+	// 		output-high;
+	// 	};
 
-		dout-pins {
-			pins = "gpio13";
-			function = "i2s2_data";
-			drive-strength = <8>;
-			bias-disable;
-		};
-	};
+	// 	dout-pins {
+	// 		pins = "gpio13";
+	// 		function = "i2s2_data";
+	// 		drive-strength = <8>;
+	// 		bias-disable;
+	// 	};
+	// };
 	// lpi_i2s2_sck_active {
 	// 	phandle = <0x700>;
 
@@ -1497,7 +1503,7 @@
 	compatible = "qcom,sm8250-sndcard";
 	model = "Xiaoxin Pad Pro";
 	pinctrl-names = "default";
-	pinctrl-0 = <&pri_tdm_active &lpi_i2s2>;
+	pinctrl-0 = <&pri_tdm_active>;
 	// pinctrl-0 = <&tert_tdm_active>;
 	mm1-dai-link {
 		link-name = "MultiMedia1";
@@ -1752,7 +1758,7 @@
 	};
 
 	spkr_1_sd_n_active: spkr-1-sd-n-active {
-		pins = "gpio26", "gpio29";
+		pins = "gpio26";
 		function = "gpio";
 		drive-strength = <8>;
 		bias-disable;
@@ -1943,10 +1949,6 @@
 		vddrfa1p2-supply = <&vreg_pmu_rfa_1p2>;
 		vddrfa1p7-supply = <&vreg_pmu_rfa_1p7>;
 	};
-};
-
-&uart12 {
-	status = "okay";
 };
 
 &ufs_mem_hc {
