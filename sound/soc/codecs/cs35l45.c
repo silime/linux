@@ -599,7 +599,12 @@ static SOC_ENUM_SINGLE_DECL(amplifier_mode_enum, SND_SOC_NOPM, 0,
 			    amplifier_mode_texts);
 static DECLARE_TLV_DB_SCALE(amp_gain_tlv, 1000, 300, 0);
 static const DECLARE_TLV_DB_SCALE(cs35l45_dig_pcm_vol_tlv, -10225, 25, true);
-
+static const char * const gain_texts[] = {"10dB", "13dB", "16dB", "19dB"};
+static const unsigned int gain_values[] = {0x00, 0x01, 0x02, 0x03};
+static SOC_VALUE_ENUM_SINGLE_DECL(gain_enum, CS35L45_AMP_GAIN,
+			CS35L45_AMP_GAIN_PCM_SHIFT,
+			CS35L45_AMP_GAIN_PCM_MASK >> CS35L45_AMP_GAIN_PCM_SHIFT,
+			gain_texts, gain_values);
 static const struct snd_kcontrol_new cs35l45_controls[] = {
 	SOC_ENUM("AMP PCM Gain", gain_enum),
 	SOC_ENUM_EXT("Amplifier Mode", amplifier_mode_enum,
