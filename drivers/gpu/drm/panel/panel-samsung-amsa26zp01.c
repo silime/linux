@@ -16,6 +16,7 @@
 #include <drm/drm_mipi_dsi.h>
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
+#include <drm/drm_probe_helper.h>
 
 struct samsung_amsa26zp01 {
 	struct drm_panel panel;
@@ -154,19 +155,20 @@ static int samsung_amsa26zp01_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
-// static const struct drm_display_mode samsung_2k_dsc_60_mode = {
-// 	.clock = (2560 + 12 + 12 + 20) * (1600 + 12 + 2 + 16) * 60 / 1000,
-// 	.hdisplay = 2560,
-// 	.hsync_start = 2560 + 12,
-// 	.hsync_end = 2560 + 12 + 12,
-// 	.htotal = 2560 + 12 + 12 + 20,
-// 	.vdisplay = 1600,
-// 	.vsync_start = 1600 + 12,
-// 	.vsync_end = 1600 + 12 + 2,
-// 	.vtotal = 1600 + 12 + 2 + 16,
-// 	.width_mm = 271,
-// 	.height_mm = 170,
-// };
+static const struct drm_display_mode samsung_2k_dsc_60_mode = {
+	.clock = (2560 + 12 + 12 + 20) * (1600 + 12 + 2 + 16) * 60 / 1000,
+	.hdisplay = 2560,
+	.hsync_start = 2560 + 12,
+	.hsync_end = 2560 + 12 + 12,
+	.htotal = 2560 + 12 + 12 + 20,
+	.vdisplay = 1600,
+	.vsync_start = 1600 + 12,
+	.vsync_end = 1600 + 12 + 2,
+	.vtotal = 1600 + 12 + 2 + 16,
+	.width_mm = 271,
+	.height_mm = 170,
+};
+
 static const struct drm_display_mode samsung_2k_dsc_120_mode = {
 	.clock = (2560 + 20 + 12 + 20) * (1600 + 8 + 2 + 16) * 120 / 1000,
 	.hdisplay = 2560,
@@ -184,20 +186,13 @@ static const struct drm_display_mode samsung_2k_dsc_120_mode = {
 static int samsung_amsa26zp01_get_modes(struct drm_panel *panel,
 				     struct drm_connector *connector)
 {
-	struct drm_display_mode *mode;
+	int count = 0;
 
-	mode = drm_mode_duplicate(connector->dev, &samsung_2k_dsc_120_mode);
-	if (!mode)
-		return -ENOMEM;
+	/* Initialize 120Hz first */
+	count += drm_connector_helper_get_modes_fixed(connector, &samsung_2k_dsc_120_mode);
+	count += drm_connector_helper_get_modes_fixed(connector, &samsung_2k_dsc_60_mode);
 
-	drm_mode_set_name(mode);
-
-	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
-	connector->display_info.width_mm = mode->width_mm;
-	connector->display_info.height_mm = mode->height_mm;
-	drm_mode_probed_add(connector, mode);
-
-	return 1;
+	return count;
 }
 
 static const struct drm_panel_funcs samsung_amsa26zp01_panel_funcs = {
@@ -281,12 +276,12 @@ static int samsung_amsa26zp01_probe(struct mipi_dsi_device *dsi)
 		       DRM_MODE_CONNECTOR_DSI);
 	ctx->panel.prepare_prev_first = true;
 
+	drm_panel_add(&ctx->panel);
+
 	ctx->panel.backlight = samsung_amsa26zp01_create_backlight(dsi);
 	if (IS_ERR(ctx->panel.backlight))
 		return dev_err_probe(dev, PTR_ERR(ctx->panel.backlight),
 				     "Failed to create backlight\n");
-
-	drm_panel_add(&ctx->panel);
 
 	/* This panel only supports DSC; unconditionally enable it */
 	dsi->dsc = &ctx->dsc;
@@ -307,11 +302,10 @@ static int samsung_amsa26zp01_probe(struct mipi_dsi_device *dsi)
 	ctx->dsc.bits_per_pixel = 8 << 4; /* 4 fractional bits */
 	ctx->dsc.block_pred_enable = true;
 
-	ret = mipi_dsi_attach(dsi);
+	ret = devm_mipi_dsi_attach(dev, dsi);
 	if (ret < 0) {
-		dev_err(dev, "Failed to attach to DSI host: %d\n", ret);
 		drm_panel_remove(&ctx->panel);
-		return ret;
+		return dev_err_probe(dev, ret, "Failed to attach to DSI host\n");;
 	}
 
 	return 0;
@@ -320,12 +314,7 @@ static int samsung_amsa26zp01_probe(struct mipi_dsi_device *dsi)
 static void samsung_amsa26zp01_remove(struct mipi_dsi_device *dsi)
 {
 	struct samsung_amsa26zp01 *ctx = mipi_dsi_get_drvdata(dsi);
-	int ret;
-
-	ret = mipi_dsi_detach(dsi);
-	if (ret < 0)
-		dev_err(&dsi->dev, "Failed to detach from DSI host: %d\n", ret);
-
+	
 	drm_panel_remove(&ctx->panel);
 }
 
