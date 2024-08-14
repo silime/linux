@@ -225,14 +225,13 @@
 		regulator-always-on;
 	};
 
-	extcon_usb: extcon-usb {
-		compatible = "linux,extcon-usb-gpio";
-		// id-gpios = <&tlmm 38 GPIO_ACTIVE_HIGH>;
-		vbus-gpios = <&pm8150b_gpios 8 GPIO_ACTIVE_HIGH>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&vbus_boost_en>;
-		// pinctrl-names = "default";
-		// pinctrl-0 = <&cc_dir_default &usb_detect_en>;
+	usb_vbus_5p0: usb-vbus-5p0-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "usb_vbus_5p0";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		gpio = <&pm8150b_gpios 8 GPIO_ACTIVE_HIGH>;
 	};
 	
 	// cam0_dvdd_1v2: cam0-dvdd-1v2-regulator {
@@ -984,6 +983,20 @@
 	};
 	/* Qcom SMB1396 @ 34 */
 	/* Qcom SMB1396 slave @ 35 */
+
+};
+
+&pm8150l_flash {
+	status = "okay";
+
+	led-0 {
+		function = LED_FUNCTION_FLASH;
+		color = <LED_COLOR_ID_WHITE>;
+		led-sources = <1>;
+		led-max-microamp = <200000>;
+		flash-max-microamp = <1000000>;
+		flash-max-timeout-us = <1280000>;
+	};
 };
 
 &lpass_tlmm {
@@ -1322,6 +1335,7 @@
 	status = "okay";
 	
 	vdd-pdphy-supply = <&vreg_l2a_3p1>;
+	vdd-vbus-supply = <&usb_vbus_5p0>;
 	
 	connector {
 		compatible = "usb-c-connector";
@@ -1355,8 +1369,8 @@
 			
 			port@0 {
 				reg = <0>;
-				pm8150b_role_switch_in: endpoint {
-					remote-endpoint = <&usb_1_role_switch_out>;
+				pm8150b_hs_in: endpoint {
+					remote-endpoint = <&usb_1_dwc3_hs_out>;
 				};
 			};
 			
@@ -1976,8 +1990,11 @@
 &usb_1_dwc3 {
 	dr_mode = "otg";
 	usb-role-switch;
-	extcon = <&extcon_usb>;
 	maximum-speed = "super-speed-plus-gen2x1";
+};
+
+&usb_1_dwc3_hs_out {
+	remote-endpoint = <&pm8150b_hs_in>;
 };
 
 &usb_1_hsphy {
@@ -1986,10 +2003,6 @@
 	vdda-pll-supply = <&vreg_l5a_0p88>;
 	vdda33-supply = <&vreg_l2a_3p1>;
 	vdda18-supply = <&vreg_l12a_1p8>;
-};
-
-&usb_1_role_switch_out {
-	remote-endpoint = <&pm8150b_role_switch_in>;
 };
 
 &usb_1_hsphy {
@@ -2002,7 +2015,7 @@
 
 &usb_1_qmpphy {
 	status = "okay";
-	orientation-switch;
+
 	vdda-phy-supply = <&vreg_l9a_1p2>;
 	vdda-pll-supply = <&vreg_l18a_0p92>;
 };

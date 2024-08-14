@@ -32,8 +32,19 @@
 	qcom,msm-id = <QCOM_ID_SM8250 0x20001>; /* SM8250 v2.1 */
 	qcom,board-id = <0x10008 0>;
 
-	aliases {
-		hsuart0 = &uart6;
+	chosen {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		framebuffer: framebuffer@9c000000 {
+			compatible = "simple-framebuffer";
+			reg = <0x0 0x9c000000 0x0 0x2300000>;
+			width = <1600>;
+			height = <2560>;
+			stride = <(1600 * 4)>;
+			format = "a8r8g8b8";
+		};
 	};
 
 	battery_l: battery-l {
@@ -147,6 +158,11 @@
 
 		cdsp_secure_heap: cdsp-secure-heap@8e100000 {
 			reg = <0x0 0x8e100000 0x0 0x4600000>;
+			no-map;
+		};
+
+		cont_splash_mem: cont-splash@9c000000 {
+			reg = <0x0 0x9c000000 0x0 0x2300000>;
 			no-map;
 		};
 
@@ -813,8 +829,8 @@
 			port@0 {
 				reg = <0>;
 
-				pm8150b_role_switch_in: endpoint {
-					remote-endpoint = <&usb_1_role_switch_out>;
+				pm8150b_hs_in: endpoint {
+					remote-endpoint = <&usb_1_dwc3_hs_out>;
 				};
 			};
 		};
@@ -1047,31 +1063,8 @@
 	status = "okay";
 };
 
-&usb_1_role_switch_out {
-	remote-endpoint = <&pm8150b_role_switch_in>;
-};
-
-&usb_2 {
-	/* USB 2.0 only */
-	qcom,select-utmi-as-pipe-clk;
-	status = "okay";
-};
-
-&usb_2_dwc3 {
-	dr_mode = "host";
-	maximum-speed = "high-speed";
-	/* Remove USB3 phy */
-	phys = <&usb_2_hsphy>;
-	phy-names = "usb2-phy";
-};
-
-&usb_2_hsphy {
-	vdda-pll-supply = <&vreg_l5a_0p88>;
-	vdda18-supply = <&vreg_l12a_1p8>;
-	vdda33-supply = <&vreg_l2a_3p1>;
-	status = "okay";
-	pinctrl-0 = <&keyboard_active>;
-	pinctrl-names = "default";
+&usb_1_dwc3_hs_out {
+	remote-endpoint = <&pm8150b_hs_in>;
 };
 
 &ufs_mem_hc {
