@@ -607,6 +607,12 @@ static SOC_VALUE_ENUM_SINGLE_DECL(gain_enum, CS35L45_AMP_GAIN,
 			gain_texts, gain_values);
 static const struct snd_kcontrol_new cs35l45_controls[] = {
 	SOC_ENUM("AMP PCM Gain", gain_enum),
+	
+	SOC_SINGLE_RANGE("ASPRX1 Slot Position", CS35L45_ASP_FRAME_CONTROL5, 0,
+			 0, 63, 0),
+	SOC_SINGLE_RANGE("ASPRX2 Slot Position", CS35L45_ASP_FRAME_CONTROL5, 8,
+			 0, 63, 0),
+			 
 	SOC_ENUM_EXT("Amplifier Mode", amplifier_mode_enum,
 		     cs35l45_amplifier_mode_get, cs35l45_amplifier_mode_put),
 	SOC_SINGLE_TLV("Analog PCM Volume", CS35L45_AMP_GAIN,
