@@ -50,25 +50,6 @@
 		voltage-max-design-microvolt = <4450000>;
 	};
 
-	chosen {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
-
-		bootargs = "serial0:115200n8";
-		stdout-path = "framebuffer0";
-
-		framebuffer0: framebuffer@9c000000 {
-			compatible = "simple-framebuffer";
-			reg = <0 0x9c000000 0 0x2300000>;
-			width = <2560>;
-			height = <1600>;
-			stride = <(2560 * 4)>;
-			format = "a8r8g8b8";
-
-		};
-	};
-
 	// wcd938x: audio-codec {
 	// 	compatible = "qcom,wcd9380-codec";
 
@@ -117,11 +98,6 @@
 
 		cdsp_secure_heap: memory@8C700000 {
 			reg = <0x0 0x8C700000 0x0 0x4600000>;
-			no-map;
-		};
-
-		cont_splash_mem: memory@9c000000 {
-			reg = <0x0 0x9c000000 0x0 0x2300000>;
 			no-map;
 		};
 
