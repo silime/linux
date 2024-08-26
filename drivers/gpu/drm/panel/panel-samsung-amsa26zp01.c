@@ -40,103 +40,72 @@ static void samsung_amsa26zp01_reset(struct samsung_amsa26zp01 *ctx)
 	msleep(400);
 }
 
-static int samsung_amsa26zp01_on(struct samsung_amsa26zp01 *ctx)
+static void samsung_amsa26zp01_on(struct mipi_dsi_multi_context *dsi_ctx)
 {
-	struct mipi_dsi_device *dsi = ctx->dsi;
-	struct device *dev = &dsi->dev;
-	int ret;
-	// dsi->mode_flags |= MIPI_DSI_MODE_LPM;
 
-	mipi_dsi_dcs_write_seq(dsi, 0xf0, 0x5a, 0x5a);
-	mipi_dsi_dcs_write_seq(dsi, 0xf1, 0x5a, 0x5a);
-	mipi_dsi_dcs_write_seq(dsi, 0xfc, 0x5a, 0x5a);
+	mipi_dsi_generic_write_seq_multi(dsi_ctx, 0xf0, 0x5a, 0x5a);
+	mipi_dsi_generic_write_seq_multi(dsi_ctx, 0xf1, 0x5a, 0x5a);
+	mipi_dsi_generic_write_seq_multi(dsi_ctx, 0xfc, 0x5a, 0x5a);
 
-	mipi_dsi_dcs_write_seq(dsi, 0xf8, 0x58, 0x00, 0x10, 0x54);
-	mipi_dsi_dcs_write_seq(dsi, 0xf9, 0x04, 0x85);
+	mipi_dsi_generic_write_seq_multi(dsi_ctx, 0xf8, 0x58, 0x00, 0x10, 0x54);
+	mipi_dsi_generic_write_seq_multi(dsi_ctx, 0xf9, 0x04, 0x85);
 	/* refresh rate Transition */
 	/* 60 Hz */
-	// mipi_dsi_dcs_write_seq(dsi, 0x60, 0x00);
+	// mipi_dsi_generic_write_seq_multi(dsi_ctx, 0x60, 0x00);
 	/* 120 Hz */
-	mipi_dsi_dcs_write_seq(dsi, 0x60, 0x20);
-	msleep(50);
+	mipi_dsi_generic_write_seq_multi(dsi_ctx, 0x60, 0x20);
+	mipi_dsi_msleep(dsi_ctx, 50);
 	// #define SAMSUNG_BRIGHTNESS_MODE	0x53
-	// mipi_dsi_dcs_write_seq(dsi, SAMSUNG_BRIGHTNESS_MODE, 0xE0);
-	mipi_dsi_dcs_write_seq(dsi, MIPI_DCS_WRITE_CONTROL_DISPLAY, 0x28);  /* 0x20:Normal mode + Smooth dimming off; 0x28: Normal mode + Smooth dimming on */
-	mipi_dsi_dcs_write_seq(dsi, 0xf8, 0x58, 0x00, 0x30, 0x35);
-	usleep_range(10000, 11000);
-	mipi_dsi_dcs_write_seq(dsi, 0xf9, 0xc0, 0x2b);
-	usleep_range(10000, 11000);
-	ret = mipi_dsi_dcs_set_display_on(dsi);
-	if (ret < 0) {
-		dev_err(dev, "Failed to set display on: %d\n", ret);
-		return ret;
-	}
-
-	return 0;
+	// mipi_dsi_generic_write_seq_multi(dsi_ctx, SAMSUNG_BRIGHTNESS_MODE, 0xE0);
+	mipi_dsi_generic_write_seq_multi(dsi_ctx, MIPI_DCS_WRITE_CONTROL_DISPLAY, 0x28);  /* 0x20:Normal mode + Smooth dimming off; 0x28: Normal mode + Smooth dimming on */
+	mipi_dsi_generic_write_seq_multi(dsi_ctx, 0xf8, 0x58, 0x00, 0x30, 0x35);
+	mipi_dsi_msleep(dsi_ctx, 100);
+	mipi_dsi_generic_write_seq_multi(dsi_ctx, 0xf9, 0xc0, 0x2b);
+	mipi_dsi_msleep(dsi_ctx, 100);
+	mipi_dsi_dcs_set_display_on_multi(dsi_ctx);
 }
 
 static int samsung_amsa26zp01_disable(struct drm_panel *panel)
 {
 	struct samsung_amsa26zp01 *ctx = to_samsung_amsa26zp01(panel);
 	struct mipi_dsi_device *dsi = ctx->dsi;
-	struct device *dev = &dsi->dev;
-	int ret;
+	struct mipi_dsi_multi_context dsi_ctx = { .dsi = dsi };
 
 	dsi->mode_flags &= ~MIPI_DSI_MODE_LPM;
-	ret = mipi_dsi_dcs_set_display_off(dsi);
-	if (ret < 0) {
-		dev_err(dev, "Failed to set display off: %d\n", ret);
-		return ret;
-	}
+	mipi_dsi_dcs_set_display_off_multi(&dsi_ctx);
 
-	ret = mipi_dsi_dcs_enter_sleep_mode(dsi);
-	if (ret < 0) {
-		dev_err(dev, "Failed to enter sleep mode: %d\n", ret);
-		return ret;
-	}
-	msleep(100);
+	mipi_dsi_dcs_enter_sleep_mode_multi(&dsi_ctx);
+	mipi_dsi_msleep(&dsi_ctx, 100);
 
-	return 0;
+	return dsi_ctx.accum_err;
 }
 
 static int samsung_amsa26zp01_prepare(struct drm_panel *panel)
 {
 	struct samsung_amsa26zp01 *ctx = to_samsung_amsa26zp01(panel);
-	struct device *dev = &ctx->dsi->dev;
 	struct drm_dsc_picture_parameter_set pps;
-	int ret;
+	struct mipi_dsi_multi_context dsi_ctx = { .dsi = ctx->dsi };
 
-	ret = regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
-	if (ret < 0) {
-		dev_err(dev, "Failed to enable regulators: %d\n", ret);
-		return ret;
-	}
+	dsi_ctx.accum_err = regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
+	if (dsi_ctx.accum_err)
+		return dsi_ctx.accum_err;
+
 	samsung_amsa26zp01_reset(ctx);
 
-	ret = samsung_amsa26zp01_on(ctx);
-	if (ret < 0) {
-		dev_err(dev, "Failed to initialize panel: %d\n", ret);
-		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
-		return ret;
-	}
+	samsung_amsa26zp01_on(&dsi_ctx);
 
 	drm_dsc_pps_payload_pack(&pps, &ctx->dsc);
 	// print_hex_dump_bytes("pps: ", DUMP_PREFIX_OFFSET, &pps, sizeof(pps));
-	ret = mipi_dsi_picture_parameter_set(ctx->dsi, &pps);
-	if (ret < 0) {
-		dev_err(panel->dev, "failed to transmit PPS: %d\n", ret);
-		return ret;
+	mipi_dsi_picture_parameter_set_multi(&dsi_ctx, &pps);
+	mipi_dsi_compression_mode_ext_multi(&dsi_ctx, true, MIPI_DSI_COMPRESSION_DSC, 0);
+	mipi_dsi_msleep(&dsi_ctx, 28);
+
+	if (dsi_ctx.accum_err) {
+		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
+		regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
 	}
 
-	ret = mipi_dsi_compression_mode(ctx->dsi, true);
-	if (ret < 0) {
-		dev_err(dev, "failed to enable compression mode: %d\n", ret);
-		return ret;
-	}
-
-	msleep(28);
-
-	return 0;
+	return dsi_ctx.accum_err;
 }
 
 static int samsung_amsa26zp01_unprepare(struct drm_panel *panel)
@@ -205,13 +174,9 @@ static int samsung_amsa26zp01_bl_update_status(struct backlight_device *bl)
 	u16 brightness = backlight_get_brightness(bl);
 	int ret;
 
-	dsi->mode_flags &= ~MIPI_DSI_MODE_LPM;
 	ret = mipi_dsi_dcs_set_display_brightness(dsi, brightness);
 	if (ret < 0)
 		return ret;
-	msleep(28);
-
-	dsi->mode_flags |= MIPI_DSI_MODE_LPM;
 
 	return 0;
 }
@@ -226,7 +191,7 @@ samsung_amsa26zp01_create_backlight(struct mipi_dsi_device *dsi)
 	struct device *dev = &dsi->dev;
 	const struct backlight_properties props = {
 		.type = BACKLIGHT_RAW,
-		.brightness = 2047,
+		.brightness = 1024,
 		.max_brightness = 2047,
 	};
 
