@@ -24,7 +24,6 @@ struct samsung_amsa26zp01 {
 	struct drm_dsc_config dsc;
 	struct gpio_desc *reset_gpio;
 	struct regulator_bulk_data supplies[2];
-	bool prepared;
 };
 
 static inline
@@ -107,9 +106,6 @@ static int samsung_amsa26zp01_prepare(struct drm_panel *panel)
 	struct drm_dsc_picture_parameter_set pps;
 	int ret;
 
-	if (ctx->prepared)
-		return 0;
-
 	ret = regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
 	if (ret < 0) {
 		dev_err(dev, "Failed to enable regulators: %d\n", ret);
@@ -140,7 +136,6 @@ static int samsung_amsa26zp01_prepare(struct drm_panel *panel)
 
 	msleep(28);
 
-	ctx->prepared = true;
 	return 0;
 }
 
@@ -151,7 +146,6 @@ static int samsung_amsa26zp01_unprepare(struct drm_panel *panel)
 	gpiod_set_value_cansleep(ctx->reset_gpio, 1);
 	regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
 
-	ctx->prepared = false;
 	return 0;
 }
 
@@ -274,7 +268,7 @@ static int samsung_amsa26zp01_probe(struct mipi_dsi_device *dsi)
 	dsi->format = MIPI_DSI_FMT_RGB888;
 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO_BURST |
 			  MIPI_DSI_CLOCK_NON_CONTINUOUS;
-	ctx->prepared = false;
+	
 	drm_panel_init(&ctx->panel, dev, &samsung_amsa26zp01_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
 	ctx->panel.prepare_prev_first = true;
