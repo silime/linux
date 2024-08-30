@@ -46,8 +46,7 @@
 		compatible = "simple-battery";
 		energy-full-design-microwatt-hours = <39400000>;
 		charge-full-design-microamp-hours = <10200000>;
-		voltage-min-design-microvolt = <3600000>;
-		voltage-max-design-microvolt = <4450000>;
+		voltage-min-design-microvolt = <3870000>;
 	};
 
 	// wcd938x: audio-codec {
