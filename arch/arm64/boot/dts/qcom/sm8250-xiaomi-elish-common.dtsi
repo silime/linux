@@ -167,6 +167,29 @@
 		vin-supply = <&vph_pwr>;
 	};
 
+	wcd938x: audio-codec {
+		compatible = "qcom,wcd9380-codec";
+
+		reset-gpios = <&tlmm 32 GPIO_ACTIVE_LOW>;
+
+		vdd-buck-supply = <&vreg_s4a_1p8>;
+		vdd-rxtx-supply = <&vreg_s4a_1p8>;
+		vdd-io-supply = <&vreg_s4a_1p8>;
+		vdd-mic-bias-supply = <&vreg_bob>;
+
+		qcom,micbias1-microvolt = <2750000>;
+		qcom,micbias2-microvolt = <2750000>;
+		qcom,micbias3-microvolt = <2750000>;
+		qcom,micbias4-microvolt = <2750000>;
+		qcom,mbhc-buttons-vthreshold-microvolt = <75000 150000 237000 500000 500000 500000 500000 500000>;
+		qcom,mbhc-headset-vthreshold-microvolt = <1700000>;
+		qcom,mbhc-headphone-vthreshold-microvolt = <50000>;
+		qcom,rx-device = <&wcd_rx>;
+		qcom,tx-device = <&wcd_tx>;
+
+		#sound-dai-cells = <1>;
+	};
+
 	reserved-memory {
 		xbl_aop_mem: xbl-aop@80600000 {
 			reg = <0x0 0x80600000 0x0 0x260000>;
@@ -1043,6 +1066,14 @@
 	dai@0 {
 		reg = <0>;
 	};
+
+	dai@1 {
+		reg = <1>;
+	};
+};
+
+&rxmacro {
+	status = "okay";
 };
 
 &slpi {
@@ -1055,12 +1086,32 @@
 	model = "Xiaomi Mi Pad 5 Pro";
 	pinctrl-names = "default";
 	pinctrl-0 = <&tert_tdm_active>;
+	audio-routing =
+		"IN1_HPHL", "HPHL_OUT",
+		"IN2_HPHR", "HPHR_OUT",
+		"AMIC1", "MIC BIAS1",
+		"AMIC2", "MIC BIAS2",
+		"AMIC3", "MIC BIAS4",
+		"AMIC4", "MIC BIAS4",
+		"AMIC5", "MIC BIAS3",
+		"TX SWR_ADC0", "ADC1_OUTPUT",
+		"TX SWR_ADC1", "ADC2_OUTPUT",
+		"TX SWR_ADC2", "ADC3_OUTPUT",
+		"TX SWR_ADC3", "ADC4_OUTPUT";
 
 	mm1-dai-link {
 		link-name = "MultiMedia1";
 
 		cpu {
 			sound-dai = <&q6asmdai  MSM_FRONTEND_DAI_MULTIMEDIA1>;
+		};
+	};
+
+	mm2-dai-link {
+		link-name = "MultiMedia2";
+
+		cpu {
+			sound-dai = <&q6asmdai  MSM_FRONTEND_DAI_MULTIMEDIA2>;
 		};
 	};
 
@@ -1080,6 +1131,33 @@
 			            <&cs35l41_trh 0>, <&cs35l41_trl 0>,
 			            <&cs35l41_blh 0>, <&cs35l41_bll 0>,
 			            <&cs35l41_brh 0>, <&cs35l41_brl 0>;
+		};
+	};
+
+	wcd-playback-dai-link {
+		link-name = "WCD Playback";
+		cpu {
+			sound-dai = <&q6afedai RX_CODEC_DMA_RX_0>;
+		};
+		codec {
+			sound-dai = <&wcd938x 0>, <&swr1 0>, <&rxmacro 0>;
+		};
+		platform {
+			sound-dai = <&q6routing>;
+		};
+	};
+
+	wcd-capture-dai-link {
+		link-name = "WCD Capture";
+		cpu {
+			sound-dai = <&q6afedai TX_CODEC_DMA_TX_3>;
+		};
+
+		codec {
+			sound-dai = <&wcd938x 1>, <&swr2 0>, <&txmacro 0>;
+		};
+		platform {
+			sound-dai = <&q6routing>;
 		};
 	};
 };
@@ -1103,6 +1181,26 @@
 		/*  523 */
 		novatek,swrst-n8-addr = <0x03F0FE>;
 		novatek,spi-rd-fast-addr = <0x03F310>;
+	};
+};
+
+&swr1 {
+	status = "okay";
+
+	wcd_rx: wcd9380-rx@0,4 {
+		compatible = "sdw20217010d00";
+		reg = <0 4>;
+		qcom,rx-port-mapping = <1 2 3 4 5>;
+	};
+};
+
+&swr2 {
+	status = "okay";
+
+	wcd_tx: wcd9380-tx@0,3 {
+		compatible = "sdw20217010d00";
+		reg = <0 3>;
+		qcom,tx-port-mapping = <2 3 4 5>;
 	};
 };
 
@@ -1172,6 +1270,10 @@
 		bias-pull-up;
 		input-enable;
 	};
+};
+
+&txmacro {
+	status = "okay";
 };
 
 &uart6 {
