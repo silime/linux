@@ -1091,6 +1091,17 @@
 	"PM3003A_MODE";
 };
 
+&pm8150b_charger {
+	status = "okay";
+	monitored-battery = <&battery>;
+};
+
+&pm8150b_haptics {
+	status = "okay";
+	qcom,wave-play-rate-us = <5882>;
+	qcom,actuator-type = <HAP_TYPE_ERM>;
+};
+
 &pm8150b_typec {
 	status = "okay";
 
@@ -1610,6 +1621,13 @@
 
 &usb_1_qmpphy_out {
 	remote-endpoint = <&redriver_phy_con_ss>;
+};
+
+&vamacro {
+	pinctrl-0 = <&dmic01_active>;
+	pinctrl-names = "default";
+	vdd-micb-supply = <&vreg_s4a_1p8>;
+	qcom,dmic-sample-rate = <600000>;
 };
 
 &venus {
