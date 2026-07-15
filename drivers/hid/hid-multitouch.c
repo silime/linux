@@ -516,6 +516,7 @@ static const struct attribute_group mt_attribute_group = {
 
 static void mt_get_feature(struct hid_device *hdev, struct hid_report *report)
 {
+	struct mt_device *td = hid_get_drvdata(hdev);
 	int ret;
 	u32 size = hid_report_len(report);
 	u8 *buf;
@@ -524,7 +525,8 @@ static void mt_get_feature(struct hid_device *hdev, struct hid_report *report)
 	 * Do not fetch the feature report if the device has been explicitly
 	 * marked as non-capable.
 	 */
-	if (hdev->quirks & HID_QUIRK_NO_INIT_REPORTS)
+	if ((hdev->quirks & HID_QUIRK_NO_INIT_REPORTS) ||
+	    (td->mtclass.quirks & MT_QUIRK_NO_MODE_REPORTS))
 		return;
 
 	buf = hid_alloc_report_buf(report, GFP_KERNEL);
