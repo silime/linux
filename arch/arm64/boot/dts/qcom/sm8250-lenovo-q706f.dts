@@ -283,6 +283,16 @@
 			};
 		};
 
+		port@1 {
+			csiphy1_ep: endpoint {
+				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
+				clock-lanes = <7>;
+				data-lanes = <0 1>;
+				remote-endpoint = <&s5k5e9_rear_aux_ep>;
+				status = "disabled";
+			};
+		};
+
 		port@2 {
 			csiphy2_ep: endpoint {
 				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
@@ -325,6 +335,39 @@
 				data-lanes = <1 2 3 4>;
 				link-frequencies = /bits/ 64 <560000000>;
 				remote-endpoint = <&csiphy0_ep>;
+			};
+		};
+	};
+};
+
+/* The S5K5E9YX04 wiring is complete, but Linux has no sensor driver yet. */
+&cci0_i2c1 {
+	camera_rear_aux: camera@2d {
+		compatible = "samsung,s5k5e9yx04";
+		reg = <0x2d>;
+
+		avdd-supply = <&vreg_l6f_2p8>;
+		dovdd-supply = <&vreg_l7f_1p8>;
+		dvdd-supply = <&vreg_l2f_1p2>;
+
+		clocks = <&camcc CAM_CC_MCLK1_CLK>;
+		clock-names = "xvclk";
+		assigned-clocks = <&camcc CAM_CC_MCLK1_CLK>;
+		assigned-clock-rates = <19200000>;
+
+		reset-gpios = <&pm8009_gpios 3 GPIO_ACTIVE_LOW>;
+
+		pinctrl-0 = <&cam1_mclk_default>, <&cam1_rst_default>;
+		pinctrl-names = "default";
+
+		orientation = <1>;
+		rotation = <90>;
+		status = "disabled";
+
+		port {
+			s5k5e9_rear_aux_ep: endpoint {
+				data-lanes = <1 2>;
+				remote-endpoint = <&csiphy1_ep>;
 			};
 		};
 	};
@@ -1133,6 +1176,17 @@
 		bias-disable;
 	};
 
+	cam1_rst_default: cam1-rst-default-state {
+		pins = "gpio3";
+		function = "normal";
+		power-source = <1>;
+
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_LOW>;
+		drive-push-pull;
+		output-low;
+		bias-disable;
+	};
+
 	cam2_rst_default: cam2-rst-default-state {
 		pins = "gpio4";
 		function = "normal";
@@ -1495,6 +1549,16 @@
 	cam0_default: cam0-default-state {
 		mclk0-pins {
 			pins = "gpio94";
+			function = "cam_mclk";
+
+			drive-strength = <16>;
+			bias-disable;
+		};
+	};
+
+	cam1_mclk_default: cam1-mclk-default-state {
+		mclk1-pins {
+			pins = "gpio95";
 			function = "cam_mclk";
 
 			drive-strength = <16>;
