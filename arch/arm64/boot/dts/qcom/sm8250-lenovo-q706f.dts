@@ -7,6 +7,7 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/arm/qcom,ids.h>
+#include <dt-bindings/media/video-interfaces.h>
 #include <dt-bindings/usb/pd.h>
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
 #include <dt-bindings/sound/qcom,q6afe.h>
@@ -263,6 +264,106 @@
 &adsp {
 	status = "okay";
 	firmware-name = "qcom/sm8250/q706f/adsp.mbn";
+};
+
+&camss {
+	status = "okay";
+
+	vdda-phy-supply = <&vreg_l5a_0p88>;
+	vdda-pll-supply = <&vreg_l9a_1p2>;
+
+	ports {
+		port@0 {
+			csiphy0_ep: endpoint {
+				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
+				clock-lanes = <7>;
+				data-lanes = <0 1 2 3>;
+				remote-endpoint = <&ov13b10_rear_ep>;
+			};
+		};
+
+		port@2 {
+			csiphy2_ep: endpoint {
+				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
+				clock-lanes = <7>;
+				data-lanes = <0 1>;
+				remote-endpoint = <&ov8856_front_ep>;
+			};
+		};
+	};
+};
+
+&cci0 {
+	status = "okay";
+};
+
+&cci0_i2c0 {
+	camera_rear: camera@36 {
+		compatible = "ovti,ov13b10";
+		reg = <0x36>;
+
+		avdd-supply = <&vreg_l5f_2p8>;
+		dovdd-supply = <&vreg_l7f_1p8>;
+		dvdd-supply = <&vreg_l1f_1p1>;
+
+		clocks = <&camcc CAM_CC_MCLK0_CLK>;
+		clock-names = "xvclk";
+		assigned-clocks = <&camcc CAM_CC_MCLK0_CLK>;
+		assigned-clock-rates = <19200000>;
+
+		reset-gpios = <&pm8009_gpios 0 GPIO_ACTIVE_LOW>;
+
+		pinctrl-0 = <&cam0_default>;
+		pinctrl-names = "default";
+
+		orientation = <1>;
+		rotation = <90>;
+
+		port {
+			ov13b10_rear_ep: endpoint {
+				data-lanes = <1 2 3 4>;
+				link-frequencies = /bits/ 64 <560000000>;
+				remote-endpoint = <&csiphy0_ep>;
+			};
+		};
+	};
+};
+
+&cci1 {
+	status = "okay";
+};
+
+&cci1_i2c0 {
+	camera_front: camera@36 {
+		compatible = "ovti,ov8856";
+		reg = <0x36>;
+
+		avdd-supply = <&vreg_l6f_2p8>;
+		dovdd-supply = <&vreg_l7f_1p8>;
+		dvdd-supply = <&vreg_l3f_1p1>;
+
+		clocks = <&camcc CAM_CC_MCLK2_CLK>;
+		clock-names = "xvclk";
+		assigned-clocks = <&camcc CAM_CC_MCLK2_CLK>;
+		assigned-clock-rates = <19200000>;
+
+		reset-gpios = <&pm8009_gpios 3 GPIO_ACTIVE_LOW>;
+
+		pinctrl-0 = <&cam2_mclk_default>;
+		pinctrl-names = "default";
+
+		orientation = <0>;
+		rotation = <270>;
+
+		port {
+			ov8856_front_ep: endpoint {
+				data-lanes = <1 2>;
+				link-frequencies = /bits/ 64
+					<720000000 360000000>;
+				remote-endpoint = <&csiphy2_ep>;
+			};
+		};
+	};
 };
 
 &apps_rsc {
@@ -1378,6 +1479,16 @@
 			function = "cam_mclk";
 
 			drive-strength = <16>;
+			bias-disable;
+		};
+	};
+
+	cam2_mclk_default: cam2-mclk-default-state {
+		mclk2-pins {
+			pins = "gpio96";
+			function = "cam_mclk";
+
+			drive-strength = <6>;
 			bias-disable;
 		};
 	};
