@@ -82,6 +82,7 @@ static int i2c_hid_of_probe(struct i2c_client *client)
 	u32 quirks = 0;
 	int ret;
 	u32 val;
+	int count;
 
 	ihid_of = devm_kzalloc(dev, sizeof(*ihid_of), GFP_KERNEL);
 	if (!ihid_of)
@@ -90,6 +91,22 @@ static int i2c_hid_of_probe(struct i2c_client *client)
 	ihid_of->client = client;
 	ihid_of->ops.power_up = i2c_hid_of_power_up;
 	ihid_of->ops.power_down = i2c_hid_of_power_down;
+
+	count = device_property_count_u8(dev, "hid-report-descriptor");
+	if (count > 0) {
+		u8 *rdesc;
+
+		rdesc = devm_kmalloc(dev, count, GFP_KERNEL);
+		if (!rdesc)
+			return -ENOMEM;
+		ret = device_property_read_u8_array(dev,
+						    "hid-report-descriptor",
+						    rdesc, count);
+		if (ret)
+			return ret;
+		ihid_of->ops.report_descriptor = rdesc;
+		ihid_of->ops.report_descriptor_size = count;
+	}
 
 	ret = device_property_read_u32(dev, "hid-descr-addr", &val);
 	if (ret) {

@@ -785,8 +785,13 @@ static int i2c_hid_parse(struct hid_device *hid)
 	if (ret)
 		return ret;
 
-	use_override = i2c_hid_get_dmi_hid_report_desc_override(client->name,
-								&rsize);
+	if (ihid->ops->report_descriptor) {
+		use_override = (char *)ihid->ops->report_descriptor;
+		rsize = ihid->ops->report_descriptor_size;
+	} else {
+		use_override = i2c_hid_get_dmi_hid_report_desc_override(client->name,
+									&rsize);
+	}
 
 	if (use_override) {
 		rdesc = use_override;
