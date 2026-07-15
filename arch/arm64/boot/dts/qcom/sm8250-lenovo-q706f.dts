@@ -313,7 +313,7 @@
 
 		reset-gpios = <&pm8009_gpios 0 GPIO_ACTIVE_LOW>;
 
-		pinctrl-0 = <&cam0_default>;
+		pinctrl-0 = <&cam0_default>, <&cam0_rst_default>;
 		pinctrl-names = "default";
 
 		orientation = <1>;
@@ -349,7 +349,7 @@
 
 		reset-gpios = <&pm8009_gpios 3 GPIO_ACTIVE_LOW>;
 
-		pinctrl-0 = <&cam2_mclk_default>;
+		pinctrl-0 = <&cam2_mclk_default>, <&cam2_rst_default>;
 		pinctrl-names = "default";
 
 		orientation = <0>;
@@ -1121,13 +1121,27 @@
 	"NC",
 	"CAM_REAR2_RST",
 	"CAM_FRONT_RST";
-	cam0_rst_pins: rst-pins {
+	cam0_rst_default: cam0-rst-default-state {
 		pins = "gpio1";
-		function = "gpio";
+		function = "normal";
+		power-source = <1>;
 
 		drive-strength = <16>;
 		bias-disable;
 	};
+
+	cam2_rst_default: cam2-rst-default-state {
+		pins = "gpio4";
+		function = "normal";
+		power-source = <1>;
+
+		drive-strength = <16>;
+		bias-disable;
+	};
+};
+
+&pm8009_pon {
+	status = "disabled";
 };
 
 &pm8150_gpios {
@@ -1374,7 +1388,7 @@
 &spi13 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&qup_spi13_data_clk>, <&qup_spi13_cs>;
+	pinctrl-0 = <&qup_spi13_data_clk>, <&qup_spi13_cs_gpio>;
 	cs-gpios = <&tlmm 39 GPIO_ACTIVE_LOW>;
 
 	touchscreen@0 {
