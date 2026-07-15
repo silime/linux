@@ -289,7 +289,6 @@
 				clock-lanes = <7>;
 				data-lanes = <0 1>;
 				remote-endpoint = <&s5k5e9_rear_aux_ep>;
-				status = "disabled";
 			};
 		};
 
@@ -340,15 +339,14 @@
 	};
 };
 
-/* The S5K5E9YX04 wiring is complete, but Linux has no sensor driver yet. */
 &cci0_i2c1 {
 	camera_rear_aux: camera@2d {
-		compatible = "samsung,s5k5e9yx04";
+		compatible = "samsung,s5k5e9";
 		reg = <0x2d>;
 
-		avdd-supply = <&vreg_l6f_2p8>;
-		dovdd-supply = <&vreg_l7f_1p8>;
-		dvdd-supply = <&vreg_l2f_1p2>;
+		vana-supply = <&vreg_l6f_2p8>;
+		vio-supply = <&vreg_l7f_1p8>;
+		vdig-supply = <&vreg_l2f_1p2>;
 
 		clocks = <&camcc CAM_CC_MCLK1_CLK>;
 		clock-names = "xvclk";
@@ -362,11 +360,11 @@
 
 		orientation = <1>;
 		rotation = <90>;
-		status = "disabled";
 
 		port {
 			s5k5e9_rear_aux_ep: endpoint {
 				data-lanes = <1 2>;
+				link-frequencies = /bits/ 64 <480000000>;
 				remote-endpoint = <&csiphy1_ep>;
 			};
 		};
