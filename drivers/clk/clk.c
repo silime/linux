@@ -3845,9 +3845,22 @@ static void clk_core_reparent_orphans_nolock(void)
 		 * are enabled during init but might not have a parent yet.
 		 */
 		if (parent) {
-			/* update the clk tree topology */
-			__clk_set_parent_before(orphan, parent);
-			__clk_set_parent_after(orphan, parent, NULL);
+			/*
+			 * Only migrate clock state when there is state to
+			 * migrate. Calling __clk_set_parent_before() for an
+			 * unprepared CLK_OPS_PARENT_ENABLE orphan needlessly
+			 * prepares its new parent even though no hardware parent
+			 * switch is performed here.
+			 */
+			if (orphan->prepare_count) {
+				__clk_set_parent_before(orphan, parent);
+				__clk_set_parent_after(orphan, parent, NULL);
+			} else {
+				unsigned long flags = clk_enable_lock();
+
+				clk_reparent(orphan, parent);
+				clk_enable_unlock(flags);
+			}
 			__clk_recalc_accuracies(orphan);
 			__clk_recalc_rates(orphan, true, 0);
 
