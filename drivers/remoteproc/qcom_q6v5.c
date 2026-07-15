@@ -78,7 +78,9 @@ EXPORT_SYMBOL_GPL(qcom_q6v5_prepare);
  */
 int qcom_q6v5_unprepare(struct qcom_q6v5 *q6v5)
 {
-	disable_irq(q6v5->handover_irq);
+	/* A completed handover already disabled its one-shot interrupt. */
+	if (!q6v5->handover_issued)
+		disable_irq(q6v5->handover_irq);
 	q6v5_load_state_toggle(q6v5, false);
 
 	/* Disable interconnect vote, in case handover never happened */
@@ -165,7 +167,6 @@ static irqreturn_t q6v5_handover_interrupt(int irq, void *data)
 	struct qcom_q6v5 *q6v5 = data;
 
 	if (q6v5->handover_issued) {
-		dev_err(q6v5->dev, "Handover signaled, but it already happened\n");
 		return IRQ_HANDLED;
 	}
 
@@ -175,6 +176,8 @@ static irqreturn_t q6v5_handover_interrupt(int irq, void *data)
 	icc_set_bw(q6v5->path, 0, 0);
 
 	q6v5->handover_issued = true;
+	/* Handover is a one-shot event. Some firmware leaves the line asserted. */
+	disable_irq_nosync(q6v5->handover_irq);
 
 	return IRQ_HANDLED;
 }

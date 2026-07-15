@@ -783,6 +783,15 @@
 	firmware-name = "qcom/sm8250/q706f/cdsp.mbn";
 };
 
+&cpu7_opp_table {
+	/* Snapdragon 870 prime-core boost entry exposed by the EPSS LUT. */
+	opp-3187200000 {
+		opp-hz = /bits/ 64 <3187200000>;
+		opp-peak-kBps = <8368000 51609600>;
+		turbo-mode;
+	};
+};
+
 &crypto {
 	status = "okay";
 };
@@ -826,6 +835,7 @@
 	keyboard@61 {
         compatible = "hid-over-i2c";
 		vdd-supply = <&vreg_l10c_3p0>;
+		vddl-supply = <&vreg_s4a_1p8>;
         reg = <0x61>;
         hid-descr-addr = <0x01>;
 		interrupt-parent = <&tlmm>;
@@ -982,6 +992,7 @@
 	touchpad@60 {
 		compatible = "hid-over-i2c";
 		vdd-supply = <&vreg_l10c_3p0>;
+		vddl-supply = <&vreg_s4a_1p8>;
 		reg = <0x60>;
 		hid-descr-addr = <0x01>;
 		interrupt-parent = <&tlmm>;
@@ -1458,7 +1469,7 @@
 		reset-gpios = <&tlmm 30 GPIO_ACTIVE_LOW>;
 
 		avdd-supply = <&vreg_l7c_ts_3p0>;
-		// vddio-supply = <&ts_1p8_supply>;
+		vddio-supply = <&vreg_s4a_1p8>;
 
 		spi-max-frequency = <1000000>;
 

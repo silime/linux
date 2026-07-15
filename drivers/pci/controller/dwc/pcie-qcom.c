@@ -216,6 +216,7 @@ struct qcom_pcie_resources_2_7_0 {
 	struct clk_bulk_data *clks;
 	int num_clks;
 	struct regulator_bulk_data supplies[QCOM_PCIE_2_7_0_MAX_SUPPLIES];
+	int num_supplies;
 	struct reset_control *rst;
 };
 
@@ -938,18 +939,27 @@ static int qcom_pcie_get_resources_2_7_0(struct qcom_pcie *pcie)
 	struct qcom_pcie_resources_2_7_0 *res = &pcie->res.v2_7_0;
 	struct dw_pcie *pci = pcie->pci;
 	struct device *dev = pci->dev;
-	int ret;
 
 	res->rst = devm_reset_control_array_get_exclusive(dev);
 	if (IS_ERR(res->rst))
 		return PTR_ERR(res->rst);
 
+	/* These rails are not wired on all 1.9.0/2.7.0 implementations. */
 	res->supplies[0].supply = "vdda";
 	res->supplies[1].supply = "vddpe-3v3";
-	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(res->supplies),
-				      res->supplies);
-	if (ret)
-		return ret;
+	for (int i = 0; i < ARRAY_SIZE(res->supplies); i++) {
+		struct regulator *supply;
+
+		supply = devm_regulator_get_optional(dev, res->supplies[i].supply);
+		if (IS_ERR(supply)) {
+			if (PTR_ERR(supply) == -ENODEV)
+				continue;
+			return PTR_ERR(supply);
+		}
+
+		res->supplies[res->num_supplies].supply = res->supplies[i].supply;
+		res->supplies[res->num_supplies++].consumer = supply;
+	}
 
 	res->num_clks = devm_clk_bulk_get_all(dev, &res->clks);
 	if (res->num_clks < 0) {
@@ -968,7 +978,7 @@ static int qcom_pcie_init_2_7_0(struct qcom_pcie *pcie)
 	u32 val;
 	int ret;
 
-	ret = regulator_bulk_enable(ARRAY_SIZE(res->supplies), res->supplies);
+	ret = regulator_bulk_enable(res->num_supplies, res->supplies);
 	if (ret < 0) {
 		dev_err(dev, "cannot enable regulators\n");
 		return ret;
@@ -1029,7 +1039,7 @@ static int qcom_pcie_init_2_7_0(struct qcom_pcie *pcie)
 err_disable_clocks:
 	clk_bulk_disable_unprepare(res->num_clks, res->clks);
 err_disable_regulators:
-	regulator_bulk_disable(ARRAY_SIZE(res->supplies), res->supplies);
+	regulator_bulk_disable(res->num_supplies, res->supplies);
 
 	return ret;
 }
@@ -1072,7 +1082,7 @@ static void qcom_pcie_deinit_2_7_0(struct qcom_pcie *pcie)
 
 	clk_bulk_disable_unprepare(res->num_clks, res->clks);
 
-	regulator_bulk_disable(ARRAY_SIZE(res->supplies), res->supplies);
+	regulator_bulk_disable(res->num_supplies, res->supplies);
 }
 
 static int qcom_pcie_config_sid_1_9_0(struct qcom_pcie *pcie)

@@ -510,6 +510,10 @@ static int dsi_pll_7nm_vco_prepare(struct clk_hw *hw)
 	rc = dsi_pll_7nm_lock_status(pll_7nm);
 	if (rc) {
 		pr_err("PLL(%d) lock failed\n", pll_7nm->phy->id);
+		writel(0, pll_7nm->phy->base + REG_DSI_7nm_PHY_CMN_PLL_CNTRL);
+		dsi_pll_disable_pll_bias(pll_7nm);
+		if (pll_7nm->slave)
+			dsi_pll_disable_pll_bias(pll_7nm->slave);
 		goto error;
 	}
 

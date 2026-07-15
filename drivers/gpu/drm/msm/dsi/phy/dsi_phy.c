@@ -693,20 +693,40 @@ static int dsi_phy_driver_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return dev_err_probe(dev, ret, "Unable to get iface clk\n");
 
+	/*
+	 * Registering the PHY clocks reparents already registered DISPCC
+	 * orphan clocks.  Some of those clocks can carry the bootloader's
+	 * prepare count, so the clock core may call into the PLL while adding
+	 * the provider.  Keep the PHY power domain and interface clock active
+	 * until that operation is complete.
+	 */
+	ret = pm_runtime_resume_and_get(dev);
+	if (ret)
+		return dev_err_probe(dev, ret, "Unable to power PHY for clock registration\n");
+
 	if (phy->cfg->ops.pll_init) {
 		ret = phy->cfg->ops.pll_init(phy);
-		if (ret)
-			return dev_err_probe(dev, ret,
-					     "PLL init failed; need separate clk driver\n");
+		if (ret) {
+			dev_err_probe(dev, ret,
+				      "PLL init failed; need separate clk driver\n");
+			goto err_runtime_put;
+		}
 	}
 
 	ret = devm_of_clk_add_hw_provider(dev, of_clk_hw_onecell_get,
-				     phy->provided_clocks);
-	if (ret)
-		return dev_err_probe(dev, ret,
-				     "Failed to register clk provider\n");
+					  phy->provided_clocks);
+	if (ret) {
+		dev_err_probe(dev, ret, "Failed to register clk provider\n");
+		goto err_runtime_put;
+	}
+
+	pm_runtime_put(dev);
 
 	return 0;
+
+err_runtime_put:
+	pm_runtime_put(dev);
+	return ret;
 }
 
 static const struct dev_pm_ops dsi_phy_pm_ops = {
