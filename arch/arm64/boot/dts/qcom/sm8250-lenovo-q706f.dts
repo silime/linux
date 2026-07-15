@@ -8,6 +8,7 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/arm/qcom,ids.h>
 #include <dt-bindings/media/video-interfaces.h>
+#include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
 #include <dt-bindings/usb/pd.h>
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
 #include <dt-bindings/sound/qcom,q6afe.h>
@@ -396,8 +397,8 @@
 
 		vreg_l1f_1p1: ldo1 {
 			regulator-name = "vreg_l1f_1p1";
-			regulator-min-microvolt = <1104000>;
-			regulator-max-microvolt = <1104000>;
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <1200000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
@@ -410,8 +411,8 @@
 
 		vreg_l3f_1p1: ldo3 {
 			regulator-name = "vreg_l3f_1p1";
-			regulator-min-microvolt = <1056000>;
-			regulator-max-microvolt = <1200000>;
+			regulator-min-microvolt = <1250000>;
+			regulator-max-microvolt = <1250000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
@@ -1126,6 +1127,9 @@
 		function = "normal";
 		power-source = <1>;
 
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_LOW>;
+		drive-push-pull;
+		output-low;
 		bias-disable;
 	};
 
@@ -1134,6 +1138,9 @@
 		function = "normal";
 		power-source = <1>;
 
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_LOW>;
+		drive-push-pull;
+		output-low;
 		bias-disable;
 	};
 };
