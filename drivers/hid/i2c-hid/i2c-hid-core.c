@@ -161,6 +161,9 @@ static const struct i2c_hid_quirks {
 	 */
 	{ USB_VENDOR_ID_ELAN, I2C_DEVICE_ID_ELAN_Q706F_TOUCHPAD,
 		I2C_HID_QUIRK_KEEP_POWER_ON_SUSPEND },
+	/* The Q706F keyboard MCU is subject to the same cover power domain. */
+	{ USB_VENDOR_ID_LENOVO, I2C_DEVICE_ID_LENOVO_Q706F_KEYBOARD,
+		I2C_HID_QUIRK_KEEP_POWER_ON_SUSPEND },
 	{ 0, 0 }
 };
 

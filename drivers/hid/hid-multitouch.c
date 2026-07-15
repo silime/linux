@@ -78,6 +78,7 @@ MODULE_LICENSE("GPL");
 #define MT_QUIRK_APPLE_TOUCHBAR		BIT(23)
 #define MT_QUIRK_YOGABOOK9I		BIT(24)
 #define MT_QUIRK_KEEP_LATENCY_ON_CLOSE	BIT(25)
+#define MT_QUIRK_NO_MODE_REPORTS		BIT(26)
 
 #define MT_INPUTMODE_TOUCHSCREEN	0x02
 #define MT_INPUTMODE_TOUCHPAD		0x03
@@ -216,6 +217,7 @@ static void mt_post_parse(struct mt_device *td, struct mt_application *app);
 #define MT_CLS_WIN_8_NO_STICKY_FINGERS		0x0017
 #define MT_CLS_WIN_8_FORCE_MULTI_INPUT_NSMU	0x0018
 #define MT_CLS_WIN_8_KEEP_LATENCY_ON_CLOSE	0x0019
+#define MT_CLS_WIN_8_Q706F			0x001a
 
 /* vendor specific classes */
 #define MT_CLS_3M				0x0101
@@ -298,6 +300,15 @@ static const struct mt_class mt_classes[] = {
 			MT_QUIRK_CONTACT_CNT_ACCURATE |
 			MT_QUIRK_STICKY_FINGERS |
 			MT_QUIRK_WIN8_PTP_BUTTONS,
+		.export_all_inputs = true },
+	{ .name = MT_CLS_WIN_8_Q706F,
+		.quirks = MT_QUIRK_ALWAYS_VALID |
+			MT_QUIRK_IGNORE_DUPLICATES |
+			MT_QUIRK_HOVERING |
+			MT_QUIRK_CONTACT_CNT_ACCURATE |
+			MT_QUIRK_STICKY_FINGERS |
+			MT_QUIRK_WIN8_PTP_BUTTONS |
+			MT_QUIRK_NO_MODE_REPORTS,
 		.export_all_inputs = true },
 	{ .name = MT_CLS_EXPORT_ALL_INPUTS,
 		.quirks = MT_QUIRK_ALWAYS_VALID |
@@ -1720,12 +1731,17 @@ static bool mt_need_to_apply_feature(struct hid_device *hdev,
 static void mt_set_modes(struct hid_device *hdev, enum latency_mode latency,
 			 enum report_mode report_mode)
 {
+	struct mt_device *td = hid_get_drvdata(hdev);
 	struct hid_report_enum *rep_enum;
 	struct hid_report *rep;
 	struct hid_usage *usage;
 	int i, j;
 	bool update_report;
 	bool inputmode_found = false;
+
+	/* This controller boots in PTP mode but mishandles mode reports. */
+	if (td->mtclass.quirks & MT_QUIRK_NO_MODE_REPORTS)
+		return;
 
 	rep_enum = &hdev->report_enum[HID_FEATURE_REPORT];
 	list_for_each_entry(rep, &rep_enum->report_list, list) {
@@ -2252,6 +2268,10 @@ static const struct hid_device_id mt_devices[] = {
 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_C002) },
 
 	/* Elan devices */
+	{ .driver_data = MT_CLS_WIN_8_Q706F,
+		HID_DEVICE(BUS_I2C, HID_GROUP_MULTITOUCH_WIN_8,
+			USB_VENDOR_ID_ELAN, I2C_DEVICE_ID_ELAN_Q706F_TOUCHPAD) },
+
 	{ .driver_data = MT_CLS_WIN_8_FORCE_MULTI_INPUT,
 		HID_DEVICE(BUS_I2C, HID_GROUP_MULTITOUCH_WIN_8,
 			USB_VENDOR_ID_ELAN, 0x313a) },
