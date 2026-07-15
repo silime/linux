@@ -52,6 +52,7 @@
 #define I2C_HID_QUIRK_NO_SLEEP_ON_SUSPEND	BIT(5)
 #define I2C_HID_QUIRK_DELAY_WAKEUP_AFTER_RESUME BIT(6)
 #define I2C_HID_QUIRK_RE_POWER_ON		BIT(7)
+#define I2C_HID_QUIRK_KEEP_POWER_ON_SUSPEND	BIT(8)
 
 /* Command opcodes */
 #define I2C_HID_OPCODE_RESET			0x01
@@ -151,6 +152,15 @@ static const struct i2c_hid_quirks {
 		 I2C_HID_QUIRK_DELAY_WAKEUP_AFTER_RESUME },
 	{ I2C_VENDOR_ID_BLTP, I2C_PRODUCT_ID_BLTP7853,
 		I2C_HID_QUIRK_NO_IRQ_AFTER_RESET },
+	/*
+	 * The ELAN touchpad in the Lenovo Q706F keyboard cover does not
+	 * implement the I2C HID SET_POWER state machine reliably.  Sending
+	 * SLEEP/ON around system suspend can leave it alive but no longer
+	 * producing interrupts.  Lenovo's downstream driver deliberately
+	 * skips both commands for this device.
+	 */
+	{ USB_VENDOR_ID_ELAN, I2C_DEVICE_ID_ELAN_Q706F_TOUCHPAD,
+		I2C_HID_QUIRK_KEEP_POWER_ON_SUSPEND },
 	{ 0, 0 }
 };
 
@@ -984,7 +994,8 @@ static int i2c_hid_core_suspend(struct i2c_hid *ihid, bool force_poweroff)
 		return ret;
 
 	/* Save some power */
-	if (!(ihid->quirks & I2C_HID_QUIRK_NO_SLEEP_ON_SUSPEND))
+	if (!(ihid->quirks & (I2C_HID_QUIRK_NO_SLEEP_ON_SUSPEND |
+			      I2C_HID_QUIRK_KEEP_POWER_ON_SUSPEND)))
 		i2c_hid_set_power(ihid, I2C_HID_PWR_SLEEP);
 
 	disable_irq(client->irq);
@@ -1027,8 +1038,10 @@ static int i2c_hid_core_resume(struct i2c_hid *ihid)
 		if (ret == 0)
 			ret = i2c_hid_finish_hwreset(ihid);
 		mutex_unlock(&ihid->reset_lock);
-	} else {
+	} else if (!(ihid->quirks & I2C_HID_QUIRK_KEEP_POWER_ON_SUSPEND)) {
 		ret = i2c_hid_set_power(ihid, I2C_HID_PWR_ON);
+	} else {
+		ret = 0;
 	}
 
 	if (ret)
