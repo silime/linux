@@ -312,7 +312,7 @@
 		assigned-clocks = <&camcc CAM_CC_MCLK0_CLK>;
 		assigned-clock-rates = <19200000>;
 
-		reset-gpios = <&pm8009_gpios 0 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&pm8009_gpios 1 GPIO_ACTIVE_LOW>;
 
 		pinctrl-0 = <&cam0_default>, <&cam0_rst_default>;
 		pinctrl-names = "default";
@@ -348,7 +348,7 @@
 		assigned-clocks = <&camcc CAM_CC_MCLK2_CLK>;
 		assigned-clock-rates = <19200000>;
 
-		reset-gpios = <&pm8009_gpios 3 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&pm8009_gpios 4 GPIO_ACTIVE_LOW>;
 
 		pinctrl-0 = <&cam2_mclk_default>, <&cam2_rst_default>;
 		pinctrl-names = "default";
