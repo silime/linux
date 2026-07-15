@@ -83,6 +83,7 @@ struct dsi_pll_7nm {
 	struct msm_dsi_phy *phy;
 
 	u64 vco_current_rate;
+	bool pll_configured;
 
 	/* protects REG_DSI_7nm_PHY_CMN_CLK_CFG0 register */
 	spinlock_t postdiv_lock;
@@ -367,6 +368,7 @@ static int dsi_pll_7nm_vco_set_rate(struct clk_hw *hw, unsigned long rate,
 	dsi_pll_config_hzindep_reg(pll_7nm);
 
 	dsi_pll_ssc_commit(pll_7nm, &config);
+	pll_7nm->pll_configured = true;
 
 	dsi_pll_disable_pll_bias(pll_7nm);
 	/* flush, ensure all register writes are done*/
@@ -492,6 +494,10 @@ static int dsi_pll_7nm_vco_prepare(struct clk_hw *hw)
 {
 	struct dsi_pll_7nm *pll_7nm = to_pll_7nm(hw);
 	int rc;
+
+	/* The clock core can probe an orphan parent before a rate is set. */
+	if (!pll_7nm->pll_configured)
+		return -EAGAIN;
 
 	dsi_pll_enable_pll_bias(pll_7nm);
 	if (pll_7nm->slave)
@@ -862,6 +868,7 @@ static int dsi_pll_7nm_init(struct msm_dsi_phy *phy)
 {
 	struct platform_device *pdev = phy->pdev;
 	struct dsi_pll_7nm *pll_7nm;
+	unsigned long rate;
 	int ret;
 
 	pll_7nm = devm_kzalloc(&pdev->dev, sizeof(*pll_7nm), GFP_KERNEL);
@@ -892,8 +899,11 @@ static int dsi_pll_7nm_init(struct msm_dsi_phy *phy)
 	 * Store also proper vco_current_rate, because its value will be used in
 	 * dsi_7nm_pll_restore_state().
 	 */
-	if (!dsi_pll_7nm_vco_recalc_rate(&pll_7nm->clk_hw, VCO_REF_CLK_RATE))
+	rate = dsi_pll_7nm_vco_recalc_rate(&pll_7nm->clk_hw, VCO_REF_CLK_RATE);
+	if (!rate)
 		pll_7nm->vco_current_rate = pll_7nm->phy->cfg->min_pll_rate;
+	else
+		pll_7nm->pll_configured = true;
 
 	return 0;
 }
