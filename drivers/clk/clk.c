@@ -1471,14 +1471,18 @@ static void __init clk_disable_unused_subtree(struct clk_core *core)
 {
 	struct clk_core *child;
 	unsigned long flags;
+	int ret;
 
 	lockdep_assert_held(&prepare_lock);
 
 	hlist_for_each_entry(child, &core->children, child_node)
 		clk_disable_unused_subtree(child);
 
-	if (core->flags & CLK_OPS_PARENT_ENABLE)
-		clk_core_prepare_enable(core->parent);
+	if (core->flags & CLK_OPS_PARENT_ENABLE) {
+		ret = clk_core_prepare_enable(core->parent);
+		if (ret)
+			return;
+	}
 
 	flags = clk_enable_lock();
 
