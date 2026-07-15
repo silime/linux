@@ -2097,6 +2097,7 @@ static struct clk_core *__clk_set_parent_before(struct clk_core *core,
 {
 	unsigned long flags;
 	struct clk_core *old_parent = core->parent;
+	int ret;
 
 	/*
 	 * 1. enable parents for CLK_OPS_PARENT_ENABLE clock
@@ -2120,13 +2121,27 @@ static struct clk_core *__clk_set_parent_before(struct clk_core *core,
 
 	/* enable old_parent & parent if CLK_OPS_PARENT_ENABLE is set */
 	if (core->flags & CLK_OPS_PARENT_ENABLE) {
-		clk_core_prepare_enable(old_parent);
-		clk_core_prepare_enable(parent);
+		ret = clk_core_prepare_enable(old_parent);
+		if (ret)
+			return ERR_PTR(ret);
+
+		ret = clk_core_prepare_enable(parent);
+		if (ret) {
+			clk_core_disable_unprepare(old_parent);
+			return ERR_PTR(ret);
+		}
 	}
 
 	/* migrate prepare count if > 0 */
 	if (core->prepare_count) {
-		clk_core_prepare_enable(parent);
+		ret = clk_core_prepare_enable(parent);
+		if (ret) {
+			if (core->flags & CLK_OPS_PARENT_ENABLE) {
+				clk_core_disable_unprepare(parent);
+				clk_core_disable_unprepare(old_parent);
+			}
+			return ERR_PTR(ret);
+		}
 		clk_core_enable_lock(core);
 	}
 
@@ -2166,6 +2181,8 @@ static int __clk_set_parent(struct clk_core *core, struct clk_core *parent,
 	struct clk_core *old_parent;
 
 	old_parent = __clk_set_parent_before(core, parent);
+	if (IS_ERR(old_parent))
+		return PTR_ERR(old_parent);
 
 	trace_clk_set_parent(core, parent);
 
@@ -2413,6 +2430,8 @@ static void clk_change_rate(struct clk_core *core)
 
 	if (core->new_parent && core->new_parent != core->parent) {
 		old_parent = __clk_set_parent_before(core, core->new_parent);
+		if (IS_ERR(old_parent))
+			goto skip_parent_change;
 		trace_clk_set_parent(core, core->new_parent);
 
 		if (core->ops->set_rate_and_parent) {
@@ -2427,6 +2446,8 @@ static void clk_change_rate(struct clk_core *core)
 		trace_clk_set_parent_complete(core, core->new_parent);
 		__clk_set_parent_after(core, core->new_parent, old_parent);
 	}
+
+skip_parent_change:
 
 	if (core->flags & CLK_OPS_PARENT_ENABLE)
 		clk_core_prepare_enable(parent);
@@ -3846,7 +3867,8 @@ static void clk_core_reparent_orphans_nolock(void)
 		 */
 		if (parent) {
 			/* update the clk tree topology */
-			__clk_set_parent_before(orphan, parent);
+			if (IS_ERR(__clk_set_parent_before(orphan, parent)))
+				continue;
 			__clk_set_parent_after(orphan, parent, NULL);
 			__clk_recalc_accuracies(orphan);
 			__clk_recalc_rates(orphan, true, 0);
