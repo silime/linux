@@ -512,7 +512,7 @@ static int s5k5e9_power_on(struct device *dev)
 	struct s5k5e9 *s5k5e9 = to_s5k5e9(sd);
 	int ret;
 
-	gpiod_set_value_cansleep(s5k5e9->reset_gpio, 0);
+	gpiod_set_value_cansleep(s5k5e9->reset_gpio, 1);
 	usleep_range(1000, 2000);
 
 	ret = regulator_bulk_enable(ARRAY_SIZE(s5k5e9_supply_names),
@@ -530,7 +530,7 @@ static int s5k5e9_power_on(struct device *dev)
 	}
 	usleep_range(10000, 11000);
 
-	gpiod_set_value_cansleep(s5k5e9->reset_gpio, 1);
+	gpiod_set_value_cansleep(s5k5e9->reset_gpio, 0);
 	usleep_range(18000, 19000);
 
 	return 0;
@@ -549,7 +549,7 @@ static int s5k5e9_power_off(struct device *dev)
 	clk_disable_unprepare(s5k5e9->xvclk);
 	usleep_range(1000, 2000);
 
-	gpiod_set_value_cansleep(s5k5e9->reset_gpio, 0);
+	gpiod_set_value_cansleep(s5k5e9->reset_gpio, 1);
 	usleep_range(1000, 2000);
 
 	regulator_bulk_disable(ARRAY_SIZE(s5k5e9_supply_names),
@@ -710,7 +710,7 @@ static int s5k5e9_probe(struct i2c_client *client)
 					 "Failed to get xvclk\n");
 
 	s5k5e9->reset_gpio = devm_gpiod_get(dev, "reset",
-							 GPIOD_OUT_LOW);
+							 GPIOD_OUT_HIGH);
 	if (IS_ERR(s5k5e9->reset_gpio))
 		return dev_err_probe(dev, PTR_ERR(s5k5e9->reset_gpio),
 					 "Failed to get reset gpio\n");
