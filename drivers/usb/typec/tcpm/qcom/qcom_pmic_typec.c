@@ -52,29 +52,6 @@ static int qcom_pmic_typec_get_current_limit(struct tcpc_dev *tcpc)
 	return ret || val.intval <= 0 ? 900 : val.intval / 1000;
 }
 
-static int qcom_pmic_typec_set_current_limit(struct tcpc_dev *tcpc,
-					     u32 max_ma, u32 mv)
-{
-	struct pmic_typec *tcpm = tcpc_to_tcpm(tcpc);
-	union power_supply_propval val = { .intval = max_ma * 1000 };
-	struct power_supply *psy;
-	int ret;
-
-	/* A detach does not need to overwrite the charger's next APSD limit. */
-	if (!max_ma)
-		return 0;
-
-	psy = power_supply_get_by_name(tcpm->charger_psy_name);
-	if (!psy)
-		return -ENODEV;
-
-	ret = power_supply_set_property(psy, POWER_SUPPLY_PROP_CURRENT_MAX,
-					&val);
-	power_supply_put(psy);
-
-	return ret;
-}
-
 static int qcom_pmic_typec_init(struct tcpc_dev *tcpc)
 {
 	return 0;
@@ -102,10 +79,8 @@ static int qcom_pmic_typec_probe(struct platform_device *pdev)
 	tcpm->dev = dev;
 	tcpm->charger_psy_name = res->charger_psy_name;
 	tcpm->tcpc.init = qcom_pmic_typec_init;
-	if (res->charger_psy_name) {
+	if (res->charger_psy_name)
 		tcpm->tcpc.get_current_limit = qcom_pmic_typec_get_current_limit;
-		tcpm->tcpc.set_current_limit = qcom_pmic_typec_set_current_limit;
-	}
 
 	regmap = dev_get_regmap(dev->parent, NULL);
 	if (!regmap) {
