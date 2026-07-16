@@ -5,7 +5,7 @@
 $id: http://devicetree.org/schemas/media/i2c/dongwoon,dw9768.yaml#
 $schema: http://devicetree.org/meta-schemas/core.yaml#
 
-title: Dongwoon Anatech DW9768 Voice Coil Motor (VCM) Lens
+title: Dongwoon Anatech DW9763 and DW9768 Voice Coil Motor (VCM) Lens
 
 maintainers:
   - Dongchun Zhu <dongchun.zhu@mediatek.com>
@@ -21,6 +21,7 @@ description: |-
 properties:
   compatible:
     enum:
+      - dongwoon,dw9763 # for DW9763 VCM
       - dongwoon,dw9768 # for DW9768 VCM
       - giantec,gt9769  # for GT9769 VCM
 

@@ -528,6 +528,7 @@ static void dw9768_remove(struct i2c_client *client)
 }
 
 static const struct of_device_id dw9768_of_table[] = {
+	{ .compatible = "dongwoon,dw9763" },
 	{ .compatible = "dongwoon,dw9768" },
 	{ .compatible = "giantec,gt9769" },
 	{}

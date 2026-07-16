@@ -347,7 +347,10 @@
 		pinctrl-names = "default";
 
 		orientation = <1>;
-		rotation = <90>;
+		/* Compensate Android's portrait-based sensor orientation. */
+		rotation = <0>;
+		lens-focus = <&dw9763_vcm>;
+		flash-leds = <&rear_flash>;
 
 		port {
 			ov13b10_rear_ep: endpoint {
@@ -356,6 +359,14 @@
 				remote-endpoint = <&csiphy0_ep>;
 			};
 		};
+	};
+
+	dw9763_vcm: lens@c {
+		compatible = "dongwoon,dw9763";
+		reg = <0x0c>;
+
+		vin-supply = <&vreg_l4a_2p8>;
+		vdd-supply = <&vreg_l4a_2p8>;
 	};
 };
 
@@ -379,7 +390,8 @@
 		pinctrl-names = "default";
 
 		orientation = <1>;
-		rotation = <90>;
+		/* Compensate Android's portrait-based sensor orientation. */
+		rotation = <0>;
 
 		port {
 			s5k5e9_rear_aux_ep: endpoint {
@@ -415,7 +427,8 @@
 		pinctrl-names = "default";
 
 		orientation = <0>;
-		rotation = <270>;
+		/* Compensate Android's portrait-based sensor orientation. */
+		rotation = <0>;
 
 		port {
 			ov8856_front_ep: endpoint {
@@ -569,7 +582,12 @@
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
-		/* l4 = VDD_SSC_MX (lmx.lvl) */
+		vreg_l4a_2p8: ldo4 {
+			regulator-name = "vreg_l4a_2p8";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <2800000>;
+			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+		};
 
 		vreg_l5a_0p88: ldo5 {
 			regulator-name = "vreg_l5a_0p88";
@@ -1085,7 +1103,7 @@
 &pm8150l_flash {
 	status = "okay";
 
-	led-0 {
+	rear_flash: led-0 {
 		function = LED_FUNCTION_FLASH;
 		color = <LED_COLOR_ID_WHITE>;
 		led-sources = <1>;
