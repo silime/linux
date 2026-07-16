@@ -135,6 +135,12 @@ static int sm8250_snd_startup(struct snd_pcm_substream *substream)
 	int ret,j;
 
 	switch (cpu_dai->id) {
+	case SENARY_MI2S_TX:
+		/* AS33970 supplies BCLK and FSYNC on the Q706F. */
+		fmt = SND_SOC_DAIFMT_BC_FC |
+		      SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_I2S;
+		snd_soc_dai_set_fmt(cpu_dai, fmt);
+		break;
 	case PRIMARY_MI2S_RX:
 		codec_dai_fmt |= SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_I2S;
 		snd_soc_dai_set_sysclk(cpu_dai,

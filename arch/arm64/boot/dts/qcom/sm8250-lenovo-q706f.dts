@@ -37,6 +37,26 @@
 		serial1 = &uart6;
 	};
 
+	wcd938x: audio-codec {
+		compatible = "qcom,wcd9380-codec";
+
+		reset-gpios = <&tlmm 32 GPIO_ACTIVE_LOW>;
+
+		vdd-buck-supply = <&vreg_s4a_1p8>;
+		vdd-rxtx-supply = <&vreg_s4a_1p8>;
+		vdd-io-supply = <&vreg_s4a_1p8>;
+		vdd-mic-bias-supply = <&vreg_bob>;
+
+		qcom,micbias1-microvolt = <1800000>;
+		qcom,micbias2-microvolt = <1800000>;
+		qcom,micbias3-microvolt = <1800000>;
+		qcom,micbias4-microvolt = <1800000>;
+		qcom,rx-device = <&wcd_rx>;
+		qcom,tx-device = <&wcd_tx>;
+
+		#sound-dai-cells = <1>;
+	};
+
 	battery: battery {
 		compatible = "simple-battery";
 		energy-full-design-microwatt-hours = <39400000>;
@@ -834,6 +854,7 @@
 	/* hid-over-i2c Keyboard @ 61 */
 	keyboard@61 {
         compatible = "hid-over-i2c";
+		status = "disabled";
 		vdd-supply = <&vreg_l10c_3p0>;
 		vddl-supply = <&vreg_s4a_1p8>;
         reg = <0x61>;
@@ -991,6 +1012,7 @@
 	/* hid-over-i2c ptp @ 60 */
 	touchpad@60 {
 		compatible = "hid-over-i2c";
+		status = "disabled";
 		vdd-supply = <&vreg_l10c_3p0>;
 		vddl-supply = <&vreg_s4a_1p8>;
 		reg = <0x60>;
@@ -1424,6 +1446,14 @@
 };
 
 &q6afedai {
+	dai@104 {
+		reg = <DISPLAY_PORT_RX>;
+	};
+
+	dai@148 {
+		reg = <SENARY_MI2S_TX>;
+		qcom,sd-lines = <0>;
+	};
 
 	dai@24 {
 		reg = <PRIMARY_TDM_RX_0>;
@@ -1440,6 +1470,18 @@
 	dai@0 {
 		reg = <0>;
 	};
+
+	dai@1 {
+		reg = <1>;
+	};
+
+	dai@2 {
+		reg = <2>;
+	};
+
+	dai@3 {
+		reg = <3>;
+	};
 };
 
 
@@ -1450,6 +1492,7 @@
 
 &sound {
 	compatible = "qcom,sm8250-sndcard";
+	status = "okay";
 	model = "Xiaoxin Pad Pro";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pri_tdm_active>;
@@ -1459,6 +1502,58 @@
 
 		cpu {
 			sound-dai = <&q6asmdai  MSM_FRONTEND_DAI_MULTIMEDIA1>;
+		};
+	};
+
+	mm2-dai-link {
+		link-name = "MultiMedia2";
+
+		cpu {
+			sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA2>;
+		};
+	};
+
+	mm3-dai-link {
+		link-name = "MultiMedia3";
+
+		cpu {
+			sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA3>;
+		};
+	};
+
+	mm4-dai-link {
+		link-name = "MultiMedia4";
+
+		cpu {
+			sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA4>;
+		};
+	};
+
+	displayport-dai-link {
+		link-name = "DisplayPort Playback";
+
+		cpu {
+			sound-dai = <&q6afedai DISPLAY_PORT_RX>;
+		};
+
+		platform {
+			sound-dai = <&q6routing>;
+		};
+
+		codec {
+			sound-dai = <&mdss_dp>;
+		};
+	};
+
+	senary-capture-dai-link {
+		link-name = "SENARY Capture";
+
+		cpu {
+			sound-dai = <&q6afedai SENARY_MI2S_TX>;
+		};
+
+		platform {
+			sound-dai = <&q6routing>;
 		};
 	};
 
@@ -1478,6 +1573,50 @@
 						<&cs35l41_spk3 0>, <&cs35l41_spk4 0>;
 		};
 	};
+
+	wcd-capture-dai-link {
+		link-name = "WCD Capture";
+
+		cpu {
+			sound-dai = <&q6afedai TX_CODEC_DMA_TX_3>;
+		};
+
+		platform {
+			sound-dai = <&q6routing>;
+		};
+
+		codec {
+			sound-dai = <&wcd938x 1>, <&swr2 0>, <&txmacro 0>;
+		};
+	};
+};
+
+&rxmacro {
+	status = "okay";
+};
+
+&swr1 {
+	status = "okay";
+
+	wcd_rx: wcd9380-rx@0,4 {
+		compatible = "sdw20217010d00";
+		reg = <0 4>;
+		qcom,rx-port-mapping = <1 2 3 4 5>;
+	};
+};
+
+&swr2 {
+	status = "okay";
+
+	wcd_tx: wcd9380-tx@0,3 {
+		compatible = "sdw20217010d00";
+		reg = <0 3>;
+		qcom,tx-port-mapping = <2 3 4 5>;
+	};
+};
+
+&txmacro {
+	status = "okay";
 };
 
 &spi13 {
