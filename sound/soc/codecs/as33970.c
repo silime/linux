@@ -20,8 +20,10 @@
 #define AS33970_CMD_WORDS 13
 #define SYS_CMD_VERSION 1
 #define SYS_CMD_LOADER_VERSION 3
+#define SYS_CMD_EXEC_FILE 9
 #define SYS_CMD_PARAMETER_VALUE 14
 #define SYS_CMD_EVENT_PARAM 15
+#define SYS_CMD_POWER_MODE 29
 #define EVENT_USB_RECORD_STARTSTOP BIT(1)
 #define EVENT_USB_PLAYBACK_STARTSTOP BIT(5)
 #define EVENT_PAR_RATE_MAIN_INPUT 32
@@ -489,6 +491,27 @@ static int as33970_set(struct as33970_priv *as33970, u16 id,
 	return as33970_command(as33970, id, module, count, data, NULL);
 }
 
+static int as33970_load_communication_graph(struct as33970_priv *as33970)
+{
+	int ret;
+
+	ret = as33970_set(as33970, SYS_CMD_POWER_MODE, AS33970_ARM_ID, 3,
+			  1, 0, 1);
+	if (ret < 0)
+		return ret;
+	msleep(50);
+	ret = as33970_set(as33970, SYS_CMD_EXEC_FILE, AS33970_ARM_ID, 1,
+			  0x4369ba00); /* ZFV0 Communication */
+	if (ret < 0)
+		return ret;
+	ret = as33970_set(as33970, SYS_CMD_PARAMETER_VALUE, AS33970_ARM_ID, 2,
+			  100, BIT(3)); /* NR on, AEC off */
+	if (ret < 0)
+		return ret;
+	return as33970_set(as33970, SYS_CMD_EXEC_FILE, AS33970_ARM_ID, 1,
+			   0xb769b500); /* UFVM */
+}
+
 static int as33970_record(struct as33970_priv *as33970, bool enable)
 {
 	int ret;
@@ -658,6 +681,10 @@ static int as33970_probe(struct i2c_client *client)
 		return dev_err_probe(&client->dev, ret < 0 ? ret : -EIO,
 				     "firmware did not start\n");
 	}
+	ret = as33970_load_communication_graph(as33970);
+	if (ret < 0)
+		return dev_err_probe(&client->dev, ret,
+				     "failed to load communication graph\n");
 
 	return devm_snd_soc_register_component(&client->dev, &as33970_component,
 					       &as33970_dai, 1);
