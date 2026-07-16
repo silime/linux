@@ -483,6 +483,7 @@ static int smb5_set_prop_charging_enabled(struct smb5_chip *chip, unsigned int v
 
 static void smb5_status_change_work(struct work_struct *work)
 {
+	union power_supply_propval typec_current, typec_online;
 	unsigned int charger_type, current_ua;
 	int usb_online = 0;
 	int count, rc;
@@ -527,6 +528,19 @@ static void smb5_status_change_work(struct work_struct *work)
 	default:
 		current_ua = SDP_CURRENT_UA;
 		break;
+	}
+
+	/* Never exceed the current advertised or negotiated by TCPM. */
+	rc = power_supply_get_property_from_supplier(chip->chg_psy,
+					POWER_SUPPLY_PROP_ONLINE,
+					&typec_online);
+	if (!rc && typec_online.intval) {
+		rc = power_supply_get_property_from_supplier(chip->chg_psy,
+						POWER_SUPPLY_PROP_CURRENT_MAX,
+						&typec_current);
+		if (!rc && typec_current.intval > 0)
+			current_ua = min(current_ua,
+					 (unsigned int)typec_current.intval);
 	}
 
 	smb5_set_current_limit(chip, current_ua);

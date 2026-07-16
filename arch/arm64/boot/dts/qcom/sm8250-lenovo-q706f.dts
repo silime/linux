@@ -1343,6 +1343,7 @@
 &pm8150b_charger {
 	status = "okay";
 	monitored-battery = <&battery>;
+	power-supplies = <&pm8150b_typec>;
 };
 
 &pm8150b_haptics {
