@@ -854,7 +854,7 @@
 	/* hid-over-i2c Keyboard @ 61 */
 	keyboard@61 {
         compatible = "hid-over-i2c";
-		status = "disabled";
+		status = "okay";
 		vdd-supply = <&vreg_l10c_3p0>;
 		vddl-supply = <&vreg_s4a_1p8>;
         reg = <0x61>;
@@ -1012,7 +1012,7 @@
 	/* hid-over-i2c ptp @ 60 */
 	touchpad@60 {
 		compatible = "hid-over-i2c";
-		status = "disabled";
+		status = "okay";
 		vdd-supply = <&vreg_l10c_3p0>;
 		vddl-supply = <&vreg_s4a_1p8>;
 		reg = <0x60>;
