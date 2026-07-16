@@ -1075,6 +1075,7 @@
 		compatible = "ti,bq27541";
 		reg = <0x55>;
 		monitored-battery = <&battery>;
+		power-supplies = <&pm8150b_charger>;
 	};
 	/* Qcom SMB1396 @ 34 */
 	/* Qcom SMB1396 slave @ 35 */
@@ -1362,7 +1363,6 @@
 		op-sink-microwatt = <10000000>;
 		power-role = "dual";
 		data-role = "dual";
-		self-powered;
 
 		source-pdos = <PDO_FIXED(5000, 3000,
 		PDO_FIXED_DUAL_ROLE |

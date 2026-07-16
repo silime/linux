@@ -251,7 +251,8 @@
 #define AICL_RERUN_TIME_CFG			0x661
 #define AICL_RERUN_TIME_MASK			GENMASK(1, 0)
 
-#define SDP_CURRENT_UA			500000
+/* Match the enumerated SuperSpeed SDP limit used by the vendor firmware. */
+#define SDP_CURRENT_UA			900000
 #define CDP_CURRENT_UA			3000000
 #define DCP_CURRENT_UA			3300000
 #define CURRENT_MAX_UA			DCP_CURRENT_UA
@@ -771,10 +772,10 @@ static const struct smb5_register smb5_init_seq[] = {
 	{ .addr = USBIN_OPTIONS_1_CFG,
 	  .mask = BC1P2_SRC_DETECT_BIT,
 	  .val = BC1P2_SRC_DETECT_BIT },
-	/* Set the default SDP charger type to a 500ma USB 2.0 port */
+	/* Select the 900 mA SuperSpeed SDP current configured above. */
 	{ .addr = USBIN_ICL_OPTIONS,
-	  .mask = USBIN_MODE_CHG_BIT,
-	  .val = USBIN_MODE_CHG_BIT },
+	  .mask = CFG_USB3P0_SEL_BIT | USBIN_MODE_CHG_BIT,
+	  .val = CFG_USB3P0_SEL_BIT | USBIN_MODE_CHG_BIT },
 	{ .addr = CMD_ICL_OVERRIDE,
 	  .mask = ICL_OVERRIDE_BIT,
 	  .val = 0 },
