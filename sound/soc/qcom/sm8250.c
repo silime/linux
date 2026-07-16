@@ -139,7 +139,19 @@ static int sm8250_snd_startup(struct snd_pcm_substream *substream)
 		/* AS33970 supplies BCLK and FSYNC on the Q706F. */
 		fmt = SND_SOC_DAIFMT_BC_FC |
 		      SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_I2S;
-		snd_soc_dai_set_fmt(cpu_dai, fmt);
+		ret = snd_soc_dai_set_sysclk(cpu_dai,
+			Q6AFE_LPASS_CLK_ID_SEN_MI2S_EBIT,
+			MI2S_BCLK_RATE, SNDRV_PCM_STREAM_CAPTURE);
+		if (ret < 0) {
+			dev_err(rtd->dev, "SENARY EBIT clock error: %d\n", ret);
+			return ret;
+		}
+
+		ret = snd_soc_dai_set_fmt(cpu_dai, fmt);
+		if (ret < 0) {
+			dev_err(rtd->dev, "SENARY DAI format error: %d\n", ret);
+			return ret;
+		}
 		break;
 	case PRIMARY_MI2S_RX:
 		codec_dai_fmt |= SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_I2S;

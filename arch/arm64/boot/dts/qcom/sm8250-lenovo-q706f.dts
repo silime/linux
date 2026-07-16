@@ -924,6 +924,22 @@
 	status = "okay";
 	clock-frequency = <400000>;
 
+	as33970: audio-dsp@41 {
+		compatible = "syna,as33970";
+		reg = <0x41>;
+		#sound-dai-cells = <0>;
+		as33970-vbat-supply = <&vreg_l13a_3p0>;
+		as33970-avdd13-supply = <&avdd_1p3_supply>;
+		reset-gpios = <&tlmm 22 GPIO_ACTIVE_HIGH>;
+		wakeup-gpios = <&tlmm 92 GPIO_ACTIVE_HIGH>;
+	};
+
+	es7210: audio-adc@40 {
+		compatible = "everest,es7210";
+		reg = <0x40>;
+		vdd-supply = <&audio2_1p8_supply>;
+	};
+
 	// SPK1-cs35l45
 	// SPK1_fast_switch_music.txt SPK1_fast_switch_ring.txt SPK1_fast_switch_voice.txt
 	cs35l45_spk1: speaker-amp@30 {
@@ -1490,12 +1506,46 @@
 	firmware-name = "qcom/sm8250/q706f/slpi.mbn";
 };
 
+&lpass_tlmm {
+	senary_mi2s_active: senary-mi2s-active-state {
+		sck-pins {
+			pins = "gpio10";
+			function = "i2s2_clk";
+			drive-strength = <2>;
+			bias-disable;
+			input-enable;
+		};
+
+		ws-pins {
+			pins = "gpio11";
+			function = "i2s2_ws";
+			drive-strength = <2>;
+			bias-disable;
+			input-enable;
+		};
+
+		data-pins {
+			pins = "gpio12";
+			function = "i2s2_data";
+			drive-strength = <2>;
+			bias-disable;
+			input-enable;
+		};
+	};
+};
+
 &sound {
 	compatible = "qcom,sm8250-sndcard";
 	status = "okay";
 	model = "Xiaoxin Pad Pro";
+	audio-routing =
+		"AMIC1", "MIC BIAS1",
+		"AMIC2", "MIC BIAS2",
+		"AMIC3", "MIC BIAS3",
+		"TX SWR_ADC0", "ADC1_OUTPUT",
+		"TX SWR_ADC1", "ADC2_OUTPUT";
 	pinctrl-names = "default";
-	pinctrl-0 = <&pri_tdm_active>;
+	pinctrl-0 = <&pri_tdm_active>, <&senary_mi2s_active>;
 
 	mm1-dai-link {
 		link-name = "MultiMedia1";
@@ -1554,6 +1604,10 @@
 
 		platform {
 			sound-dai = <&q6routing>;
+		};
+
+		codec {
+			sound-dai = <&as33970>;
 		};
 	};
 

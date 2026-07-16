@@ -2881,4 +2881,17 @@ config SND_SOC_LPASS_TX_MACRO
 	select SND_SOC_LPASS_MACRO_COMMON
 	tristate "Qualcomm TX Macro in LPASS(Low Power Audio SubSystem)"
 
+config SND_SOC_AS33970
+	tristate "Synaptics AS33970 microphone DSP"
+	depends on I2C
+	select REGMAP_I2C
+	help
+	  Enable the AS33970 microphone-array DSP used on the Lenovo Q706F.
+
+config SND_SOC_ES7210
+	tristate "Everest Semi ES7210 microphone ADC"
+	depends on I2C
+	help
+	  Enable initialization of the four-channel ES7210 microphone ADC.
+
 endmenu

@@ -880,6 +880,10 @@ obj-$(CONFIG_SND_SOC_LPASS_WSA_MACRO)	+= snd-soc-lpass-wsa-macro.o
 obj-$(CONFIG_SND_SOC_LPASS_VA_MACRO)	+= snd-soc-lpass-va-macro.o
 obj-$(CONFIG_SND_SOC_LPASS_RX_MACRO)	+= snd-soc-lpass-rx-macro.o
 obj-$(CONFIG_SND_SOC_LPASS_TX_MACRO)	+= snd-soc-lpass-tx-macro.o
+snd-soc-as33970-objs := as33970.o
+obj-$(CONFIG_SND_SOC_AS33970)	+= snd-soc-as33970.o
+snd-soc-es7210-objs := es7210.o
+obj-$(CONFIG_SND_SOC_ES7210)	+= snd-soc-es7210.o
 
 # Mux
 obj-$(CONFIG_SND_SOC_SIMPLE_MUX)	+= snd-soc-simple-mux.o
