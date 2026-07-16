@@ -1363,6 +1363,7 @@
 		op-sink-microwatt = <10000000>;
 		power-role = "dual";
 		data-role = "dual";
+		self-powered;
 
 		source-pdos = <PDO_FIXED(5000, 3000,
 		PDO_FIXED_DUAL_ROLE |

@@ -728,33 +728,6 @@ static const struct power_supply_desc smb5_psy_desc = {
 static const struct smb5_register smb5_init_seq[] = {
 	{ .addr = USBIN_CMD_IL, .mask = USBIN_SUSPEND_BIT, .val = 0 },
 	{ .addr = AICL_RERUN_TIME_CFG, .mask = AICL_RERUN_TIME_MASK, .val = 0 },
-	/*
-	 * By default configure us as an upstream facing port
-	 * FIXME: This will be handled by the type-c driver
-	 */
-	{ .addr = TYPE_C_MODE_CFG,
-	  .mask = EN_TRY_SNK_BIT | EN_SNK_ONLY_BIT,
-	  .val = EN_TRY_SNK_BIT },
-	{ .addr = TYPEC_TYPE_C_VCONN_CONTROL,
-	  .mask = VCONN_EN_ORIENTATION_BIT | VCONN_EN_SRC_BIT |
-		  VCONN_EN_VALUE_BIT,
-	  .val = VCONN_EN_SRC_BIT },
-	{ .addr = DEBUG_ACCESS_SRC_CFG,
-	  .mask = EN_UNORIENTED_DEBUG_ACCESS_SRC_BIT,
-	  .val = EN_UNORIENTED_DEBUG_ACCESS_SRC_BIT },
-	{ .addr = TYPE_C_EXIT_STATE_CFG,
-	  .mask = SEL_SRC_UPPER_REF_BIT,
-	  .val = SEL_SRC_UPPER_REF_BIT },
-	/*
-	 * Disable Type-C factory mode and stay in Attached.SRC state when VCONN
-	 * over-current happens
-	 */
-	{ .addr = TYPE_C_CFG,
-	  .mask = BC1P2_START_ON_CC_BIT,
-	  .val = 0 },
-	{ .addr = TYPE_C_DEBUG_ACCESS_SINK,
-	  .mask = TYPEC_DEBUG_ACCESS_SINK_MASK,
-	  .val = 0x17 },
 	/* Configure VBUS for software control */
 	{ .addr = OTG_CFG, .mask = OTG_EN_SRC_CFG_BIT, .val = 0 },
 	/*
