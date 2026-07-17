@@ -359,7 +359,7 @@ static int smb5_apsd_get_charger_type(struct smb5_chip *chip, int *val)
 		return rc;
 	}
 	if (!(apsd_stat & APSD_DTC_STATUS_DONE_BIT)) {
-		dev_err(chip->dev, "Apsd not ready");
+		dev_dbg(chip->dev, "APSD detection is still in progress\n");
 		return -EAGAIN;
 	}
 
@@ -483,8 +483,9 @@ static int smb5_set_prop_charging_enabled(struct smb5_chip *chip, unsigned int v
 
 static void smb5_status_change_work(struct work_struct *work)
 {
-	union power_supply_propval typec_current, typec_online;
+	union power_supply_propval typec_current, typec_online, typec_usb_type;
 	unsigned int charger_type, current_ua;
+	bool pd_online = false;
 	int usb_online = 0;
 	int count, rc;
 	struct smb5_chip *chip;
@@ -494,6 +495,49 @@ static void smb5_status_change_work(struct work_struct *work)
 	smb5_get_prop_usb_online(chip, &usb_online);
 	if (!usb_online)
 		return;
+
+	/*
+	 * APSD is a BC1.2 detector and may still be running while TCPM has
+	 * already established an explicit PD contract.  In that case TCPM is
+	 * authoritative; waiting for or rerunning APSD only creates a race with
+	 * Type-C alternate-mode discovery and can temporarily apply an SDP ICL.
+	 */
+	rc = power_supply_get_property_from_supplier(chip->chg_psy,
+					POWER_SUPPLY_PROP_ONLINE,
+					&typec_online);
+	if (!rc && typec_online.intval) {
+		rc = power_supply_get_property_from_supplier(chip->chg_psy,
+						POWER_SUPPLY_PROP_USB_TYPE,
+						&typec_usb_type);
+		if (!rc) {
+			switch (typec_usb_type.intval) {
+			case POWER_SUPPLY_USB_TYPE_PD:
+			case POWER_SUPPLY_USB_TYPE_PD_DRP:
+			case POWER_SUPPLY_USB_TYPE_PD_PPS:
+			case POWER_SUPPLY_USB_TYPE_PD_SPR_AVS:
+			case POWER_SUPPLY_USB_TYPE_PD_PPS_SPR_AVS:
+				pd_online = true;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	if (pd_online) {
+		rc = power_supply_get_property_from_supplier(chip->chg_psy,
+						POWER_SUPPLY_PROP_CURRENT_MAX,
+						&typec_current);
+		if (!rc && typec_current.intval > 0) {
+			current_ua = min_t(unsigned int, typec_current.intval,
+					   CURRENT_MAX_UA);
+			goto set_current_limit;
+		}
+
+		/* Do not fall back to an unverified BC1.2 high-current result. */
+		current_ua = SDP_CURRENT_UA;
+		goto set_current_limit;
+	}
 
 	for (count = 0; count < 3; count++) {
 		dev_dbg(chip->dev, "get charger type retry %d\n", count);
@@ -530,7 +574,7 @@ static void smb5_status_change_work(struct work_struct *work)
 		break;
 	}
 
-	/* Never exceed the current advertised or negotiated by TCPM. */
+	/* Never exceed the current advertised by the Type-C source. */
 	rc = power_supply_get_property_from_supplier(chip->chg_psy,
 					POWER_SUPPLY_PROP_ONLINE,
 					&typec_online);
@@ -543,6 +587,7 @@ static void smb5_status_change_work(struct work_struct *work)
 					 (unsigned int)typec_current.intval);
 	}
 
+set_current_limit:
 	smb5_set_current_limit(chip, current_ua);
 	power_supply_changed(chip->chg_psy);
 }
