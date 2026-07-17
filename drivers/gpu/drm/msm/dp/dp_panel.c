@@ -319,13 +319,33 @@ u32 msm_dp_panel_get_mode_bpp(struct msm_dp_panel *msm_dp_panel,
 int msm_dp_panel_get_modes(struct msm_dp_panel *msm_dp_panel,
 	struct drm_connector *connector)
 {
+	int ret;
+
 	if (!msm_dp_panel) {
 		DRM_ERROR("invalid input\n");
 		return -EINVAL;
 	}
 
-	if (msm_dp_panel->drm_edid)
+	if (msm_dp_panel->drm_edid) {
+		/*
+		 * The connector EDID property and ELD can be cleared by the DRM
+		 * probe helpers when HPD briefly reports a disconnect.  The panel
+		 * keeps its parsed EDID so that modes survive that transition, but
+		 * adding modes alone leaves the HDMI codec with an all-zero ELD.
+		 *
+		 * Re-apply the cached EDID before adding its modes.  Besides being
+		 * the ordering required by drm_edid_connector_add_modes(), this
+		 * rebuilds display_info and ELD before the DP audio plugged event.
+		 */
+		ret = drm_edid_connector_update(connector,
+						msm_dp_panel->drm_edid);
+		if (ret) {
+			DRM_ERROR("failed to update connector EDID: %d\n", ret);
+			return 0;
+		}
+
 		return drm_edid_connector_add_modes(connector);
+	}
 
 	return 0;
 }
