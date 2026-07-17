@@ -11,6 +11,7 @@
 #include <linux/regmap.h>
 #include <linux/bitfield.h>
 #include <linux/of_graph.h>
+#include <linux/property.h>
 #include <drm/bridge/aux-bridge.h>
 #include <linux/usb/typec_dp.h>
 #include <linux/usb/typec_mux.h>
@@ -76,6 +77,11 @@ struct nb7vpq904m {
 	enum typec_orientation orientation;
 	unsigned long mode;
 	unsigned int svid;
+
+	u8 dp_eq[4];
+	u8 dp_out_comp[4];
+	u8 dp_flat_gain[4];
+	u8 dp_loss_match[4];
 };
 
 static void nb7vpq904m_set_channel(struct nb7vpq904m *nb7, unsigned int channel, bool dp)
@@ -83,10 +89,10 @@ static void nb7vpq904m_set_channel(struct nb7vpq904m *nb7, unsigned int channel,
 	u8 eq, out_comp, flat_gain, loss_match;
 
 	if (dp) {
-		eq = NB7_IS_CHAN_AD(channel) ? 0x6 : 0x4;
-		out_comp = 0x3;
-		flat_gain = NB7_IS_CHAN_AD(channel) ? 0x2 : 0x1;
-		loss_match = 0x3;
+		eq = nb7->dp_eq[channel];
+		out_comp = nb7->dp_out_comp[channel];
+		flat_gain = nb7->dp_flat_gain[channel];
+		loss_match = nb7->dp_loss_match[channel];
 	} else {
 		eq = 0x4;
 		out_comp = 0x3;
@@ -322,6 +328,75 @@ static const int supported_data_lane_mapping[][DATA_LANES_COUNT] = {
 	[INVERT_LANE_MAPPING] = { 3, 2, 1, 0 },
 };
 
+static int nb7vpq904m_read_dp_tuning(struct device *dev, const char *prop,
+				     u8 values[DATA_LANES_COUNT], u32 max)
+{
+	u32 tmp[DATA_LANES_COUNT];
+	int ret;
+	int i;
+
+	if (!device_property_present(dev, prop))
+		return 0;
+
+	ret = device_property_read_u32_array(dev, prop, tmp,
+					     DATA_LANES_COUNT);
+	if (ret)
+		return dev_err_probe(dev, ret, "failed to read %s\n", prop);
+
+	for (i = 0; i < DATA_LANES_COUNT; i++) {
+		if (tmp[i] > max)
+			return dev_err_probe(dev, -EINVAL,
+					     "%s channel %d value %u is invalid\n",
+					     prop, i, tmp[i]);
+
+		values[i] = tmp[i];
+	}
+
+	return 0;
+}
+
+static int nb7vpq904m_parse_dp_tuning(struct nb7vpq904m *nb7)
+{
+	struct device *dev = &nb7->client->dev;
+	int ret;
+
+	/* Generic defaults from the NB7VPQ904M driver. */
+	nb7->dp_eq[NB7_CHNA] = 6;
+	nb7->dp_eq[NB7_CHNB] = 4;
+	nb7->dp_eq[NB7_CHNC] = 4;
+	nb7->dp_eq[NB7_CHND] = 6;
+	nb7->dp_out_comp[NB7_CHNA] = 3;
+	nb7->dp_out_comp[NB7_CHNB] = 3;
+	nb7->dp_out_comp[NB7_CHNC] = 3;
+	nb7->dp_out_comp[NB7_CHND] = 3;
+	nb7->dp_flat_gain[NB7_CHNA] = 2;
+	nb7->dp_flat_gain[NB7_CHNB] = 1;
+	nb7->dp_flat_gain[NB7_CHNC] = 1;
+	nb7->dp_flat_gain[NB7_CHND] = 2;
+	nb7->dp_loss_match[NB7_CHNA] = 3;
+	nb7->dp_loss_match[NB7_CHNB] = 3;
+	nb7->dp_loss_match[NB7_CHNC] = 3;
+	nb7->dp_loss_match[NB7_CHND] = 3;
+
+	ret = nb7vpq904m_read_dp_tuning(dev, "onnn,dp-equalization",
+					 nb7->dp_eq, 7);
+	if (ret)
+		return ret;
+
+	ret = nb7vpq904m_read_dp_tuning(dev, "onnn,dp-output-compression",
+					 nb7->dp_out_comp, 3);
+	if (ret)
+		return ret;
+
+	ret = nb7vpq904m_read_dp_tuning(dev, "onnn,dp-flat-gain",
+					 nb7->dp_flat_gain, 3);
+	if (ret)
+		return ret;
+
+	return nb7vpq904m_read_dp_tuning(dev, "onnn,dp-loss-match",
+					 nb7->dp_loss_match, 3);
+}
+
 static int nb7vpq904m_parse_data_lanes_mapping(struct nb7vpq904m *nb7)
 {
 	struct device_node *ep;
@@ -405,6 +480,9 @@ static int nb7vpq904m_probe(struct i2c_client *client)
 
 	nb7->mode = TYPEC_STATE_SAFE;
 	nb7->orientation = TYPEC_ORIENTATION_NONE;
+	ret = nb7vpq904m_parse_dp_tuning(nb7);
+	if (ret)
+		return ret;
 
 	mutex_init(&nb7->lock);
 

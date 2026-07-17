@@ -24,6 +24,38 @@ properties:
   orientation-switch: true
   retimer-switch: true
 
+  onnn,dp-equalization:
+    $ref: /schemas/types.yaml#/definitions/uint32-array
+    description: DisplayPort equalization setting for channels A through D.
+    minItems: 4
+    maxItems: 4
+    items:
+      maximum: 7
+
+  onnn,dp-output-compression:
+    $ref: /schemas/types.yaml#/definitions/uint32-array
+    description: DisplayPort output compression setting for channels A through D.
+    minItems: 4
+    maxItems: 4
+    items:
+      maximum: 3
+
+  onnn,dp-flat-gain:
+    $ref: /schemas/types.yaml#/definitions/uint32-array
+    description: DisplayPort flat gain setting for channels A through D.
+    minItems: 4
+    maxItems: 4
+    items:
+      maximum: 3
+
+  onnn,dp-loss-match:
+    $ref: /schemas/types.yaml#/definitions/uint32-array
+    description: DisplayPort loss matching setting for channels A through D.
+    minItems: 4
+    maxItems: 4
+    items:
+      maximum: 3
+
   ports:
     $ref: /schemas/graph.yaml#/properties/ports
     properties:
