@@ -1823,6 +1823,19 @@ int q6afe_port_start(struct q6afe_port *port)
 	start->port_id = port_id;
 
 	ret = afe_apr_send_pkt(afe, pkt, port, AFE_PORT_CMD_DEVICE_START);
+	if (ret == -ETIMEDOUT && port_id == AFE_PORT_ID_HDMI_OVER_DP_RX) {
+		/*
+		 * This firmware can start HDMI-over-DP without acknowledging the
+		 * first command.  Retry once and only accept the port as running
+		 * when the DSP explicitly confirms that it is already started.
+		 */
+		ret = afe_apr_send_pkt(afe, pkt, port,
+				       AFE_PORT_CMD_DEVICE_START);
+		if (ret == -EINVAL &&
+		    port->result.opcode == AFE_PORT_CMD_DEVICE_START &&
+		    port->result.status == ADSP_EALREADY)
+			ret = 0;
+	}
 	if (ret)
 		dev_err(afe->dev, "AFE enable for port 0x%x failed %d\n",
 			port_id, ret);
