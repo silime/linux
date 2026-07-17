@@ -31,6 +31,8 @@
 #define AFE_SVC_CMD_SET_PARAM		0x000100f3
 #define AFE_PORT_CMDRSP_GET_PARAM_V2	0x00010106
 #define AFE_PARAM_ID_HDMI_CONFIG	0x00010210
+#define AFE_PARAM_ID_DISPLAY_PORT_CONFIG	0x000102B5
+#define AFE_PARAM_ID_DISPLAY_PORT_DEVICE	0x000102B6
 #define AFE_MODULE_AUDIO_DEV_INTERFACE	0x0001020C
 #define AFE_MODULE_TDM			0x0001028A
 
@@ -424,6 +426,11 @@ struct afe_param_id_hdmi_multi_chan_audio_cfg {
 	u32 sample_rate;
 	u16 bit_width;
 	u16 reserved;
+} __packed;
+
+struct afe_param_id_display_port_cfg {
+	u32 cfg_minor_version;
+	u32 value;
 } __packed;
 
 struct afe_param_id_slimbus_cfg {
@@ -1491,6 +1498,35 @@ void q6afe_hdmi_port_prepare(struct q6afe_port *port,
 	pcfg->hdmi_multi_ch.bit_width = cfg->bit_width;
 }
 EXPORT_SYMBOL_GPL(q6afe_hdmi_port_prepare);
+
+int q6afe_display_port_prepare(struct q6afe_port *port, u32 stream_id,
+			       u32 device_id)
+{
+	struct afe_param_id_display_port_cfg cfg = {
+		.cfg_minor_version = 1,
+	};
+	int ret;
+
+	/*
+	 * Older ADSP firmware requires the DP stream and controller indexes to
+	 * be associated with AFE_PORT_ID_HDMI_OVER_DP_RX before DEVICE_START.
+	 * The vendor driver programs both parameters for every DP prepare.
+	 */
+	cfg.value = stream_id;
+	ret = q6afe_port_set_param_v2(port, &cfg,
+				      AFE_PARAM_ID_DISPLAY_PORT_CONFIG,
+				      AFE_MODULE_AUDIO_DEV_INTERFACE,
+				      sizeof(cfg));
+	if (ret)
+		return ret;
+
+	cfg.value = device_id;
+	return q6afe_port_set_param_v2(port, &cfg,
+				       AFE_PARAM_ID_DISPLAY_PORT_DEVICE,
+				       AFE_MODULE_AUDIO_DEV_INTERFACE,
+				       sizeof(cfg));
+}
+EXPORT_SYMBOL_GPL(q6afe_display_port_prepare);
 
 /**
  * q6afe_i2s_port_prepare() - Prepare i2s afe port.

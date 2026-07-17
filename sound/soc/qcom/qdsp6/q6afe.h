@@ -255,6 +255,8 @@ void q6afe_usb_port_prepare(struct q6afe_port *port,
 			    struct q6afe_usb_cfg *cfg);
 void q6afe_hdmi_port_prepare(struct q6afe_port *port,
 			    struct q6afe_hdmi_cfg *cfg);
+int q6afe_display_port_prepare(struct q6afe_port *port, u32 stream_id,
+			       u32 device_id);
 void q6afe_slim_port_prepare(struct q6afe_port *port,
 			  struct q6afe_slim_cfg *cfg);
 int q6afe_i2s_port_prepare(struct q6afe_port *port, struct q6afe_i2s_cfg *cfg);

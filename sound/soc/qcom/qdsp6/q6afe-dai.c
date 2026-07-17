@@ -401,7 +401,16 @@ static int q6afe_dai_prepare(struct snd_pcm_substream *substream,
 
 	switch (dai->id) {
 	case HDMI_RX:
+		q6afe_hdmi_port_prepare(dai_data->port[dai->id],
+					&dai_data->port_config[dai->id].hdmi);
+		break;
 	case DISPLAY_PORT_RX:
+		rc = q6afe_display_port_prepare(dai_data->port[dai->id], 0, 0);
+		if (rc < 0) {
+			dev_err(dai->dev, "failed to configure DP stream: %d\n", rc);
+			return rc;
+		}
+
 		q6afe_hdmi_port_prepare(dai_data->port[dai->id],
 					&dai_data->port_config[dai->id].hdmi);
 		break;
