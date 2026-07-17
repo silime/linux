@@ -1777,9 +1777,15 @@ int q6afe_port_start(struct q6afe_port *port)
 	struct apr_pkt *pkt;
 	int pkt_size;
 
-	ret  = q6afe_port_set_param_v2(port, &port->port_cfg, param_id,
-				       AFE_MODULE_AUDIO_DEV_INTERFACE,
-				       sizeof(port->port_cfg));
+	if (port_id == AFE_PORT_ID_HDMI_OVER_DP_RX)
+		ret = q6afe_port_set_param_v3(port, &port->port_cfg.hdmi_multi_ch,
+					      param_id,
+					      AFE_MODULE_AUDIO_DEV_INTERFACE, 0,
+					      sizeof(port->port_cfg.hdmi_multi_ch));
+	else
+		ret = q6afe_port_set_param_v2(port, &port->port_cfg, param_id,
+					      AFE_MODULE_AUDIO_DEV_INTERFACE,
+					      sizeof(port->port_cfg));
 	if (ret) {
 		dev_err(afe->dev, "AFE enable for port 0x%x failed %d\n",
 			port_id, ret);
