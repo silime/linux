@@ -1058,14 +1058,6 @@ static int afe_apr_send_pkt(struct q6afe *afe, struct apr_pkt *pkt,
 				 msecs_to_jiffies(TIMEOUT_MS));
 	if (!ret) {
 		ret = -ETIMEDOUT;
-	} else if (rsp_opcode == AFE_PORT_CMD_DEVICE_START &&
-		   result->status == ADSP_EALREADY) {
-		/*
-		 * DEVICE_START is idempotent.  Some older ADSP firmware does not
-		 * acknowledge the first start of the HDMI-over-DP port, but reports
-		 * EALREADY when it is retried.  The port is running in that case.
-		 */
-		ret = 0;
 	} else if (result->status > 0) {
 		dev_err(afe->dev, "DSP returned error[%x]\n",
 			result->status);
@@ -1721,9 +1713,6 @@ int q6afe_port_start(struct q6afe_port *port)
 	start->port_id = port_id;
 
 	ret = afe_apr_send_pkt(afe, pkt, port, AFE_PORT_CMD_DEVICE_START);
-	if (ret == -ETIMEDOUT && port_id == AFE_PORT_ID_HDMI_OVER_DP_RX)
-		ret = afe_apr_send_pkt(afe, pkt, port,
-				       AFE_PORT_CMD_DEVICE_START);
 	if (ret)
 		dev_err(afe->dev, "AFE enable for port 0x%x failed %d\n",
 			port_id, ret);
