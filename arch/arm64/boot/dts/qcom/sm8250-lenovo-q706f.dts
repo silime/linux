@@ -804,6 +804,11 @@
 	};
 };
 
+&pon {
+	mode-bootloader = <0x2>;
+	mode-recovery = <0x1>;
+};
+
 &cdsp {
 	status = "okay";
 	firmware-name = "qcom/sm8250/q706f/cdsp.mbn";
