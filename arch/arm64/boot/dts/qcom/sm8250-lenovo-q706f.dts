@@ -115,6 +115,8 @@
 			record-size = <0x20000>;
 			console-size = <0x20000>;
 			ftrace-size = <0x20000>;
+			max-reason = <2>;
+			no-map;
 		};
 	};
 
