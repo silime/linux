@@ -28,6 +28,7 @@
 #define AFE_PORT_CMD_DEVICE_START	0x000100E5
 #define AFE_PORT_CMD_DEVICE_STOP	0x000100E6
 #define AFE_PORT_CMD_SET_PARAM_V2	0x000100EF
+#define AFE_PORT_CMD_SET_PARAM_V3	0x000100FA
 #define AFE_SVC_CMD_SET_PARAM		0x000100f3
 #define AFE_PORT_CMDRSP_GET_PARAM_V2	0x00010106
 #define AFE_PARAM_ID_HDMI_CONFIG	0x00010210
@@ -417,6 +418,23 @@ struct afe_port_cmd_set_param_v2 {
 	u32 payload_address_lsw;
 	u32 payload_address_msw;
 	u32 mem_map_handle;
+} __packed;
+
+struct afe_port_cmd_set_param_v3 {
+	u16 port_id;
+	u16 reserved;
+	u32 payload_address_lsw;
+	u32 payload_address_msw;
+	u32 mem_map_handle;
+	u32 payload_size;
+} __packed;
+
+struct afe_port_param_data_v3 {
+	u32 module_id;
+	u16 instance_id;
+	u16 reserved;
+	u32 param_id;
+	u32 param_size;
 } __packed;
 
 struct afe_param_id_hdmi_multi_chan_audio_cfg {
@@ -988,6 +1006,7 @@ static int q6afe_callback(struct apr_device *adev, const struct apr_resp_pkt *da
 		}
 		switch (res->opcode) {
 		case AFE_PORT_CMD_SET_PARAM_V2:
+		case AFE_PORT_CMD_SET_PARAM_V3:
 		case AFE_PORT_CMD_DEVICE_STOP:
 		case AFE_PORT_CMD_DEVICE_START:
 		case AFE_SVC_CMD_SET_PARAM:
@@ -1173,6 +1192,53 @@ static int q6afe_port_set_param_v2(struct q6afe_port *port, void *data,
 	if (ret)
 		dev_err(afe->dev, "AFE enable for port 0x%x failed %d\n",
 		       port_id, ret);
+
+	return ret;
+}
+
+static int q6afe_port_set_param_v3(struct q6afe_port *port, void *data,
+				   int param_id, int module_id,
+				   int instance_id, int psize)
+{
+	struct afe_port_cmd_set_param_v3 *param;
+	struct afe_port_param_data_v3 *pdata;
+	struct q6afe *afe = port->afe;
+	struct apr_pkt *pkt;
+	u16 port_id = port->id;
+	int ret;
+	int pkt_size = APR_HDR_SIZE + sizeof(*param) + sizeof(*pdata) + psize;
+	void *pl;
+
+	void *p __free(kfree) = kzalloc(pkt_size, GFP_KERNEL);
+	if (!p)
+		return -ENOMEM;
+
+	pkt = p;
+	param = p + APR_HDR_SIZE;
+	pdata = p + APR_HDR_SIZE + sizeof(*param);
+	pl = p + APR_HDR_SIZE + sizeof(*param) + sizeof(*pdata);
+	memcpy(pl, data, psize);
+
+	pkt->hdr.hdr_field = APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
+					   APR_HDR_LEN(APR_HDR_SIZE),
+					   APR_PKT_VER);
+	pkt->hdr.pkt_size = pkt_size;
+	pkt->hdr.src_port = 0;
+	pkt->hdr.dest_port = 0;
+	pkt->hdr.token = port->token;
+	pkt->hdr.opcode = AFE_PORT_CMD_SET_PARAM_V3;
+
+	param->port_id = port_id;
+	param->payload_size = sizeof(*pdata) + psize;
+	pdata->module_id = module_id;
+	pdata->instance_id = instance_id;
+	pdata->param_id = param_id;
+	pdata->param_size = psize;
+
+	ret = afe_apr_send_pkt(afe, pkt, port, AFE_PORT_CMD_SET_PARAM_V3);
+	if (ret)
+		dev_err(afe->dev, "AFE V3 params for port 0x%x failed %d\n",
+			port_id, ret);
 
 	return ret;
 }
@@ -1513,17 +1579,19 @@ int q6afe_display_port_prepare(struct q6afe_port *port, u32 stream_id,
 	 * The vendor driver programs both parameters for every DP prepare.
 	 */
 	cfg.value = stream_id;
-	ret = q6afe_port_set_param_v2(port, &cfg,
+	ret = q6afe_port_set_param_v3(port, &cfg,
 				      AFE_PARAM_ID_DISPLAY_PORT_CONFIG,
 				      AFE_MODULE_AUDIO_DEV_INTERFACE,
+				      0,
 				      sizeof(cfg));
 	if (ret)
 		return ret;
 
 	cfg.value = device_id;
-	return q6afe_port_set_param_v2(port, &cfg,
+	return q6afe_port_set_param_v3(port, &cfg,
 				       AFE_PARAM_ID_DISPLAY_PORT_DEVICE,
 				       AFE_MODULE_AUDIO_DEV_INTERFACE,
+				       0,
 				       sizeof(cfg));
 }
 EXPORT_SYMBOL_GPL(q6afe_display_port_prepare);
