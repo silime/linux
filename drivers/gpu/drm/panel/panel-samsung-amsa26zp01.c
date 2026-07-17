@@ -58,7 +58,7 @@ static void samsung_amsa26zp01_on(struct mipi_dsi_multi_context *dsi_ctx)
 	mipi_dsi_msleep(dsi_ctx, 50);
 	// #define SAMSUNG_BRIGHTNESS_MODE	0x53
 	// mipi_dsi_generic_write_seq_multi(dsi_ctx, SAMSUNG_BRIGHTNESS_MODE, 0xE0);
-	mipi_dsi_generic_write_seq_multi(dsi_ctx, MIPI_DCS_WRITE_CONTROL_DISPLAY, 0x28);  /* 0x20:Normal mode + Smooth dimming off; 0x28: Normal mode + Smooth dimming on */
+	mipi_dsi_dcs_write_seq_multi(dsi_ctx, MIPI_DCS_WRITE_CONTROL_DISPLAY, 0x28);
 	mipi_dsi_generic_write_seq_multi(dsi_ctx, 0xf8, 0x58, 0x00, 0x30, 0x35);
 	mipi_dsi_msleep(dsi_ctx, 100);
 	mipi_dsi_generic_write_seq_multi(dsi_ctx, 0xf9, 0xc0, 0x2b);
@@ -173,11 +173,13 @@ static int samsung_amsa26zp01_bl_update_status(struct backlight_device *bl)
 {
 	struct mipi_dsi_device *dsi = bl_get_data(bl);
 	u16 brightness = backlight_get_brightness(bl);
+	u8 control_display = 0x28;
 	int ret;
-	// u8 payload_hbm_on[1] = { 0xE0 };	/* HBM Mode */
-	// u8 payload_hbm_off[1] = { 0x28 }; /* 0x20:Normal mode + Smooth dimming off; 0x28: Normal mode + Smooth dimming on */
-	struct mipi_dsi_multi_context dsi_ctx = { .dsi = dsi };
-	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0x53, 0x28);
+
+	ret = mipi_dsi_dcs_write(dsi, MIPI_DCS_WRITE_CONTROL_DISPLAY,
+				 &control_display, sizeof(control_display));
+	if (ret < 0)
+		return ret;
 
 	ret = mipi_dsi_dcs_set_display_brightness(dsi, brightness);
 	if (ret < 0)
