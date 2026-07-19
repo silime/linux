@@ -113,6 +113,23 @@ static const struct venus_format vdec_formats[] = {
 
 };
 
+static u32 vdec_get_capture_size(u32 pixfmt, u32 width, u32 height)
+{
+	u32 size = venus_helper_get_framesz(pixfmt, width, height);
+
+	/*
+	 * DMA-BUF importers can require a little more backing storage than
+	 * the visible linear NV12/P010 planes occupy. In particular, Vulkan
+	 * may round plane layout requirements up beyond Venus' native frame
+	 * size. Keep the format and plane offsets unchanged and provide a
+	 * small guard area at the end of decoded linear buffers.
+	 */
+	if (pixfmt == V4L2_PIX_FMT_NV12 || pixfmt == V4L2_PIX_FMT_P010)
+		return ALIGN(size + SZ_16K, SZ_4K);
+
+	return size;
+}
+
 static const struct venus_format *
 find_format(struct venus_inst *inst, u32 pixfmt, u32 type)
 {
@@ -218,8 +235,12 @@ vdec_try_fmt_common(struct venus_inst *inst, struct v4l2_format *f)
 	pixmp->num_planes = fmt->num_planes;
 	pixmp->flags = 0;
 
-	szimage = venus_helper_get_framesz(pixmp->pixelformat, pixmp->width,
-					   pixmp->height);
+	if (f->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+		szimage = vdec_get_capture_size(pixmp->pixelformat, pixmp->width,
+					       pixmp->height);
+	else
+		szimage = venus_helper_get_framesz(pixmp->pixelformat,
+					   pixmp->width, pixmp->height);
 
 	if (f->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
 		unsigned int stride = pixmp->width;
@@ -926,7 +947,10 @@ static int vdec_queue_setup(struct vb2_queue *q,
 	int ret = 0;
 
 	if (*num_planes) {
-		unsigned int output_buf_size = venus_helper_get_opb_size(inst);
+		unsigned int output_buf_size = max(
+			venus_helper_get_opb_size(inst),
+			vdec_get_capture_size(inst->fmt_cap->pixfmt,
+					      inst->width, inst->height));
 
 		if (q->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE &&
 		    *num_planes != inst->fmt_out->num_planes)
@@ -987,9 +1011,8 @@ static int vdec_queue_setup(struct vb2_queue *q,
 		break;
 	case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
 		*num_planes = inst->fmt_cap->num_planes;
-		sizes[0] = venus_helper_get_framesz(inst->fmt_cap->pixfmt,
-						    inst->width,
-						    inst->height);
+		sizes[0] = vdec_get_capture_size(inst->fmt_cap->pixfmt,
+						 inst->width, inst->height);
 		inst->output_buf_size = sizes[0];
 		*num_buffers = max(*num_buffers, out_num);
 		inst->num_output_bufs = *num_buffers;
