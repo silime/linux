@@ -1196,17 +1196,15 @@ static int q6afe_port_set_param_v2(struct q6afe_port *port, void *data,
 	return ret;
 }
 
-static int q6afe_port_set_param_v3(struct q6afe_port *port, void *data,
-				   int param_id, int module_id,
-				   int instance_id, int psize)
+static int q6afe_port_set_params_v3(struct q6afe_port *port, void *data,
+				    int psize)
 {
 	struct afe_port_cmd_set_param_v3 *param;
-	struct afe_port_param_data_v3 *pdata;
 	struct q6afe *afe = port->afe;
 	struct apr_pkt *pkt;
 	u16 port_id = port->id;
 	int ret;
-	int pkt_size = APR_HDR_SIZE + sizeof(*param) + sizeof(*pdata) + psize;
+	int pkt_size = APR_HDR_SIZE + sizeof(*param) + psize;
 	void *pl;
 
 	void *p __free(kfree) = kzalloc(pkt_size, GFP_KERNEL);
@@ -1215,8 +1213,7 @@ static int q6afe_port_set_param_v3(struct q6afe_port *port, void *data,
 
 	pkt = p;
 	param = p + APR_HDR_SIZE;
-	pdata = p + APR_HDR_SIZE + sizeof(*param);
-	pl = p + APR_HDR_SIZE + sizeof(*param) + sizeof(*pdata);
+	pl = p + APR_HDR_SIZE + sizeof(*param);
 	memcpy(pl, data, psize);
 
 	pkt->hdr.hdr_field = APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
@@ -1229,16 +1226,39 @@ static int q6afe_port_set_param_v3(struct q6afe_port *port, void *data,
 	pkt->hdr.opcode = AFE_PORT_CMD_SET_PARAM_V3;
 
 	param->port_id = port_id;
-	param->payload_size = sizeof(*pdata) + psize;
-	pdata->module_id = module_id;
-	pdata->instance_id = instance_id;
-	pdata->param_id = param_id;
-	pdata->param_size = psize;
+	param->payload_size = psize;
 
 	ret = afe_apr_send_pkt(afe, pkt, port, AFE_PORT_CMD_SET_PARAM_V3);
 	if (ret)
 		dev_err(afe->dev, "AFE V3 params for port 0x%x failed %d\n",
 			port_id, ret);
+
+	return ret;
+}
+
+static int q6afe_port_set_param_v3(struct q6afe_port *port, void *data,
+				   int param_id, int module_id,
+				   int instance_id, int psize)
+{
+	struct {
+		struct afe_port_param_data_v3 header;
+		u8 data[];
+	} __packed *payload;
+	int ret;
+
+	payload = kzalloc(struct_size(payload, data, psize), GFP_KERNEL);
+	if (!payload)
+		return -ENOMEM;
+
+	payload->header.module_id = module_id;
+	payload->header.instance_id = instance_id;
+	payload->header.param_id = param_id;
+	payload->header.param_size = psize;
+	memcpy(payload->data, data, psize);
+
+	ret = q6afe_port_set_params_v3(port, payload,
+					     struct_size(payload, data, psize));
+	kfree(payload);
 
 	return ret;
 }
@@ -1568,31 +1588,40 @@ EXPORT_SYMBOL_GPL(q6afe_hdmi_port_prepare);
 int q6afe_display_port_prepare(struct q6afe_port *port, u32 stream_id,
 			       u32 device_id)
 {
-	struct afe_param_id_display_port_cfg cfg = {
-		.cfg_minor_version = 1,
+	struct {
+		struct afe_port_param_data_v3 stream_header;
+		struct afe_param_id_display_port_cfg stream;
+		struct afe_port_param_data_v3 device_header;
+		struct afe_param_id_display_port_cfg device;
+	} __packed payload = {
+		.stream_header = {
+			.module_id = AFE_MODULE_AUDIO_DEV_INTERFACE,
+			.param_id = AFE_PARAM_ID_DISPLAY_PORT_CONFIG,
+			.param_size = sizeof(payload.stream),
+		},
+		.stream = {
+			.cfg_minor_version = 1,
+			.value = stream_id,
+		},
+		.device_header = {
+			.module_id = AFE_MODULE_AUDIO_DEV_INTERFACE,
+			.param_id = AFE_PARAM_ID_DISPLAY_PORT_DEVICE,
+			.param_size = sizeof(payload.device),
+		},
+		.device = {
+			.cfg_minor_version = 1,
+			.value = device_id,
+		},
 	};
-	int ret;
 
 	/*
 	 * Older ADSP firmware requires the DP stream and controller indexes to
 	 * be associated with AFE_PORT_ID_HDMI_OVER_DP_RX before DEVICE_START.
-	 * The vendor driver programs both parameters for every DP prepare.
+	 * Submit both parameters atomically, matching the downstream driver;
+	 * sending them as independent commands can leave the interface partly
+	 * configured between updates.
 	 */
-	cfg.value = stream_id;
-	ret = q6afe_port_set_param_v3(port, &cfg,
-				      AFE_PARAM_ID_DISPLAY_PORT_CONFIG,
-				      AFE_MODULE_AUDIO_DEV_INTERFACE,
-				      0,
-				      sizeof(cfg));
-	if (ret)
-		return ret;
-
-	cfg.value = device_id;
-	return q6afe_port_set_param_v3(port, &cfg,
-				       AFE_PARAM_ID_DISPLAY_PORT_DEVICE,
-				       AFE_MODULE_AUDIO_DEV_INTERFACE,
-				       0,
-				       sizeof(cfg));
+	return q6afe_port_set_params_v3(port, &payload, sizeof(payload));
 }
 EXPORT_SYMBOL_GPL(q6afe_display_port_prepare);
 
@@ -1778,10 +1807,10 @@ int q6afe_port_start(struct q6afe_port *port)
 	int pkt_size;
 
 	if (port_id == AFE_PORT_ID_HDMI_OVER_DP_RX)
-		ret = q6afe_port_set_param_v3(port, &port->port_cfg.hdmi_multi_ch,
+		ret = q6afe_port_set_param_v3(port, &port->port_cfg,
 					      param_id,
 					      AFE_MODULE_AUDIO_DEV_INTERFACE, 0,
-					      sizeof(port->port_cfg.hdmi_multi_ch));
+					      sizeof(port->port_cfg));
 	else
 		ret = q6afe_port_set_param_v2(port, &port->port_cfg, param_id,
 					      AFE_MODULE_AUDIO_DEV_INTERFACE,
